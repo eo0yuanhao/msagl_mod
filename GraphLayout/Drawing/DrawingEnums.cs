@@ -163,7 +163,23 @@ namespace Microsoft.Msagl.Drawing {
         /// <summary>
         /// Generalization (UML symbol for a Generalization)
         /// </summary>
-        Generalization
+        Generalization,
+        /// <summary>
+        /// Circle with empty fill
+        /// </summary>
+        Circle,
+        /// <summary>
+        /// Rectangle with empty fill
+        /// </summary>
+        Rectangle,
+        /// <summary>
+        /// Vee Arrow
+        /// </summary>
+        Vee,
+        /// <summary>
+        /// triangle
+        /// </summary>
+        Triangle
     }
     /// <summary>
     /// http://www.graphviz.org/cvs/doc/info/attrs.html#k:dirType

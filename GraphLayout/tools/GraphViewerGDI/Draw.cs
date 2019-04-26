@@ -42,14 +42,14 @@ using Microsoft.Msagl.DebugHelpers;
 using Microsoft.Msagl.Drawing;
 using Microsoft.Msagl.Layout.Layered;
 using BBox = Microsoft.Msagl.Core.Geometry.Rectangle;
-using Color=System.Drawing.Color;
+using Color = System.Drawing.Color;
 using DrawingGraph = Microsoft.Msagl.Drawing.Graph;
 using GeometryEdge = Microsoft.Msagl.Core.Layout.Edge;
 using GeometryNode = Microsoft.Msagl.Core.Layout.Node;
 using DrawingEdge = Microsoft.Msagl.Drawing.Edge;
 using DrawingNode = Microsoft.Msagl.Drawing.Node;
 using P2 = Microsoft.Msagl.Core.Geometry.Point;
-
+using Microsoft.Msagl.Core.Geometry;
 
 namespace Microsoft.Msagl.GraphViewerGdi{
     /// <summary>
@@ -738,25 +738,69 @@ namespace Microsoft.Msagl.GraphViewerGdi{
                                        ArrowStyle arrowStyle){
             switch (arrowStyle){
                 case ArrowStyle.NonSpecified:
-                case ArrowStyle.Normal:
+                case ArrowStyle.Normal: //------------>  fill
 
                     DrawNormalArrow(g, brush, ref start, ref end, lineWidth);
                     break;
-                case ArrowStyle.Tee:
+                case ArrowStyle.Tee:  //-------|-
                     DrawTeeArrow(g, brush, ref start, ref end, lineWidth);
                     break;
-                case ArrowStyle.Diamond:
+                case ArrowStyle.Diamond:     //-------------<>   filled
                     DrawDiamondArrow(g, brush, ref start, ref end, lineWidth);
                     break;
-                case ArrowStyle.ODiamond:
+                case ArrowStyle.ODiamond:           //--------<>
                     DrawODiamondArrow(g, brush, ref start, ref end, lineWidth);
                     break;
-                case ArrowStyle.Generalization:
+                case ArrowStyle.Generalization:       //---------------|>
                     DrawGeneralizationArrow(g, brush, ref start, ref end, lineWidth);
                     break;
+                case ArrowStyle.Circle: //--------------O
+                    DrawCircleArrow(g, brush, ref start, ref end, lineWidth);
+                    break;
+                case ArrowStyle.Rectangle:    //-------------[]
+                    DrawRectangleArrow(g, brush, ref start, ref end, lineWidth);
+                    break;
+                case ArrowStyle.Vee:
+                    DrawVee(g, brush, ref start, ref end, lineWidth);
+                    break;
+                case ArrowStyle.Triangle:
+                    DrawTriangle(g, brush, ref start, ref end, lineWidth);
+                    break;
+
                 default:
                     throw new InvalidOperationException();
             }
+        }
+
+        private static void DrawTriangle(Graphics g, Brush brush, ref P2 start, ref P2 end, double lineWidth) {
+
+        }
+
+        private static void DrawVee(Graphics g, Brush brush, ref P2 start, ref P2 end, double lineWidth) {
+            P2 dir = end - start;
+            P2 s = dir.Rotate90Cw() * (1 / Math.Sqrt(3));
+
+            PointF[] points = new[] { PointF(start-s),PointF(end),PointF(start+s) };
+            g.DrawLines(new Pen(brush), points);
+            g.DrawLine(new Pen(brush), PointF(start), PointF(end));
+        }
+
+        internal static void DrawRectangleArrow(Graphics g, Brush brush, ref P2 start, ref P2 end, double lineWidth) {
+            P2 dir = end - start;
+            P2 xdir = dir.Rotate90Cw();
+            P2 o = start - (xdir / 2);
+            PointF[] points = new[] { PointF(o), PointF(o + dir), PointF(o + dir + xdir), PointF(o + xdir),PointF(o) };
+            g.DrawLines(new Pen(brush), points);
+
+        }
+
+        internal static void DrawCircleArrow(Graphics g, Brush brush, ref P2 start, ref P2 end, double lineWidth) {
+            //箭头的头子为尾端 end, 和edge连再一起的是开头 start
+            var co = (start + end) / 2;
+            float r = (float)(start - end).Length / 2;
+            float x = (float)co.X;
+            float y = (float)co.Y;
+            g.DrawEllipse(new Pen(brush), x - r, y - r,2 * r, 2 * r);
         }
 
         internal static void DrawNormalArrow(Graphics g, Brush brush, ref P2 start, ref P2 end, double lineWidth){
@@ -1107,7 +1151,7 @@ namespace Microsoft.Msagl.GraphViewerGdi{
                     var poly = iCurve as Polyline;
                     if (poly != null) {
                         var path = new GraphicsPath();
-                        path.AddLines(poly.Select(p => new Point((int)p.X, (int)p.Y)).ToArray());
+                        path.AddLines(poly.Select(p => new System.Drawing.Point((int)p.X, (int)p.Y)).ToArray());
                         path.CloseAllFigures();
                         if (NeedToFill(dNode.FillColor))
                             g.FillPath(new SolidBrush(dNode.FillColor), path);
