@@ -48,7 +48,7 @@ namespace irmap_form {
             gViewer = gv;
             gViewer.KeyDown += Form1_KeyDown;
         }
-        private bool edge_rendering_delegate(Edge edge, object graphics)
+        private void edge_rendering_delegate(Edge edge, object graphics)
         {
             Graphics g = graphics as Graphics;
             var curve = edge.EdgeCurve;
@@ -96,10 +96,11 @@ namespace irmap_form {
             //g.DrawPath(pen, path);
             //var arrowLinePath = Draw.CreateGraphicsPath(curve);
             //g.DrawPath(pen,arrowLinePath);
+            g.FillEllipse(Brushes.White, x - 2, y - 2, 4, 4);
             g.DrawEllipse(Pens.Black, x - 2, y - 2, 4, 4);
             g.DrawPath(pen, path);
             path = null;
-            return false;
+            //return false;
         }
         private void establish_graph(Graph graph) {
             //graph.AddEdge("a", "b");
@@ -110,7 +111,7 @@ namespace irmap_form {
             //e.Label = new Microsoft.Msagl.Drawing.Label();
             //e.LabelText = "aa";
             //e.GeometryEdge.Label.
-            e.DrawEdgeDelegate = edge_rendering_delegate;
+            e.DrawEdge_Last = edge_rendering_delegate;
             oe = e;
             //e.DrawEdgeDelegate
             //e.EdgeCurve

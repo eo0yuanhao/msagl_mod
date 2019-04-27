@@ -12,6 +12,12 @@ namespace Microsoft.Msagl.Drawing {
     /// <param name="graphics"></param>
     public delegate bool DelegateToOverrideEdgeRendering(Edge edge, object graphics);
     /// <summary>
+    /// If this delegate is not null and DrawEdge successfully run to last,it will execute 
+    /// </summary>
+    /// <param name="edge"></param>
+    /// <param name="graphics"></param>
+    public delegate void DelegateDrawEdgeAddition(Edge edge, object graphics);
+    /// <summary>
     /// Edge of Microsoft.Msagl.Drawing
     /// </summary>
     [Serializable]
@@ -39,6 +45,17 @@ namespace Microsoft.Msagl.Drawing {
             set { drawEdgeDelegate = value; }
         }
 
+        /// <summary>
+        /// A delegate to draw additional edge widget in last DrawEdge
+        /// </summary>
+        DelegateDrawEdgeAddition drawEdge_last;
+        /// <summary>
+        /// A delegate to draw additional edge widget in last DrawEdge if it is not null
+        /// </summary>
+        public DelegateDrawEdgeAddition DrawEdge_Last {
+            get { return drawEdge_last; }
+            set { drawEdge_last = value; }
+        }
         Port sourcePort;
         /// <summary>
         /// Defines the way the edge connects to the source.

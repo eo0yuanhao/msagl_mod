@@ -400,7 +400,9 @@ namespace Microsoft.Msagl.GraphViewerGdi{
                 Draw.DrawEdgeArrows(graphics, drawingEdge, dEdge.Color, myPen);
                 if (dEdge.DrawingEdge.GeometryEdge.Label != null)
                     Draw.DrawLabel(graphics, dEdge.Label);
-
+                if(edge.DrawEdge_Last != null ) {
+                    edge.DrawEdge_Last(edge, graphics);
+                }
 #if TEST_MSAGL
                 if (DrawControlPoints){
                     ICurve iCurve = dEdge.DrawingEdge.GeometryEdge.Curve;
