@@ -761,10 +761,10 @@ namespace Microsoft.Msagl.GraphViewerGdi{
                     DrawRectangleArrow(g, brush, ref start, ref end, lineWidth);
                     break;
                 case ArrowStyle.Vee:
-                    DrawVee(g, brush, ref start, ref end, lineWidth);
+                    DrawVeeArrow(g, brush, ref start, ref end, lineWidth);
                     break;
                 case ArrowStyle.Triangle:
-                    DrawTriangle(g, brush, ref start, ref end, lineWidth);
+                    DrawTriangleArrow(g, brush, ref start, ref end, lineWidth);
                     break;
 
                 default:
@@ -772,11 +772,11 @@ namespace Microsoft.Msagl.GraphViewerGdi{
             }
         }
 
-        private static void DrawTriangle(Graphics g, Brush brush, ref P2 start, ref P2 end, double lineWidth) {
+        private static void DrawTriangleArrow(Graphics g, Brush brush, ref P2 start, ref P2 end, double lineWidth) {
 
         }
 
-        private static void DrawVee(Graphics g, Brush brush, ref P2 start, ref P2 end, double lineWidth) {
+        private static void DrawVeeArrow(Graphics g, Brush brush, ref P2 start, ref P2 end, double lineWidth) {
             P2 dir = end - start;
             P2 s = dir.Rotate90Cw() * (1 / Math.Sqrt(3));
 
