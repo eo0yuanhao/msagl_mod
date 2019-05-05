@@ -50,7 +50,7 @@ namespace Microsoft.Msagl.Drawing {
         /// </summary>
         DelegateDrawEdgeAddition drawEdge_last;
         /// <summary>
-        /// A delegate to draw additional edge widget in last DrawEdge if it is not null
+        /// A delegate to draw additional edge widget in the last of DrawEdge 
         /// </summary>
         public DelegateDrawEdgeAddition DrawEdge_Last {
             get { return drawEdge_last; }
