@@ -1182,9 +1182,16 @@ namespace Microsoft.Msagl.WpfGraphControl {
                 Panel.SetZIndex(vEdge.CurvePath, zIndex);
                 _graphCanvas.Children.Add(vEdge.CurvePath);
                 SetVEdgeArrowheads(vEdge, zIndex);
+                SetEditingUnderlying(vEdge, zIndex);
 
                 return vEdge;
             }
+        }
+
+        private void SetEditingUnderlying(VEdge vEdge, int zIndex) {
+
+            Panel.SetZIndex(vEdge.EditingUnderlyingPath, zIndex);
+            _graphCanvas.Children.Add(vEdge.EditingUnderlyingPath);
         }
 
         int ZIndexOfEdge(DrawingEdge edge) {

@@ -49,7 +49,7 @@ using Rectangle = Microsoft.Msagl.Core.Geometry.Rectangle;
 using Size = System.Windows.Size;
 
 namespace Microsoft.Msagl.WpfGraphControl {
-    internal class VEdge : IViewerEdge, IInvalidatable {
+    internal class VEdge : IViewerEdge, IInvalidatable, IEditableObject {
         
         internal FrameworkElement LabelFrameworkElement;
 
@@ -86,6 +86,13 @@ namespace Microsoft.Msagl.WpfGraphControl {
                     frameworkElement.Visibility = edge.IsVisible ? Visibility.Visible : Visibility.Hidden;
                 }
             };
+
+            _editingUnderlying_FrameworkElement = new Path();
+            _editingUnderlying_FrameworkElement.StrokeThickness = 1;
+            _editingUnderlying_FrameworkElement.Stroke = Brushes.Red;
+            _editingUnderlying_FrameworkElement.StrokeStartLineCap = PenLineCap.Triangle;
+            _editingUnderlying_FrameworkElement.StrokeEndLineCap = PenLineCap.Triangle;
+            //_editingUnderlying_FrameworkElement.Fill = Brushes.Green;
         }
 
         internal IEnumerable<FrameworkElement> FrameworkElements {
@@ -98,10 +105,11 @@ namespace Microsoft.Msagl.WpfGraphControl {
                 if (CurvePath != null)
                     yield return CurvePath;
 
-                if (
-                    LabelFrameworkElement != null)
-                    yield return
-                        LabelFrameworkElement;
+                if ( LabelFrameworkElement != null)
+                    yield return LabelFrameworkElement;
+
+                //if (_selectedForEditing)
+                yield return _editingUnderlying_FrameworkElement;
             }
         }
 
@@ -310,6 +318,68 @@ namespace Microsoft.Msagl.WpfGraphControl {
 
         #endregion
 
+        #region Implementation of IEditableObject
+
+        //DrawingObject DrawingObject {
+        //    get { return Edge; }
+        //}
+        Path _editingUnderlying_FrameworkElement;// = new Path();
+        bool _selectedForEditing = false;
+        public Path EditingUnderlyingPath {
+            get =>  _editingUnderlying_FrameworkElement;
+        }
+        public bool SelectedForEditing {
+            get =>  _selectedForEditing;
+            set {
+                if (_selectedForEditing == value)
+                    return;
+                _selectedForEditing = value;
+                if (_selectedForEditing)
+                    CreateEditingFramework();
+                else
+                    RemoveEditingFramework();
+            }
+        }
+
+        private void RemoveEditingFramework() {
+            _editingUnderlying_FrameworkElement.Data = null ;
+        }
+
+        private void CreateEditingFramework() {
+            //Geometry geo = GetICurveWpfGeometry(Edge.GeometryEdge.Curve);
+            var uline = Edge.GeometryEdge.UnderlyingPolyline;
+            //Geometry geo = GetICurveWpfGeometry(uline.CreateCurve());
+            //Path path = _editing_FrameworkElement  as Path;
+            //GeometryGroup geos = new GeometryGroup();
+            //geos.Children.Add(geo);
+            //Path a = new Path();
+
+            PathGeometry path = new PathGeometry();
+            PathFigure lines = new PathFigure();
+            {
+                Func<Microsoft.Msagl.Core.Geometry.Point, System.Windows.Point> P2P = (Microsoft.Msagl.Core.Geometry.Point p) => new System.Windows.Point(p.X, p.Y);
+                var en = uline.GetEnumerator();
+                en.MoveNext();
+                lines.StartPoint = P2P(en.Current);
+                while (en.MoveNext()) {
+                    var s = new System.Windows.Media.LineSegment();
+                    s.Point = P2P(en.Current);
+                    lines.Segments.Add(s);
+                }
+            }
+            path.Figures.Add(lines);
+            foreach (Point p in uline) {
+                var c = new EllipseGeometry();
+                c.Center = new System.Windows.Point(p.X, p.Y);
+                c.RadiusX = c.RadiusY = 1;
+                path.AddGeometry(c); // .Children.Add(c);
+            }
+            _editingUnderlying_FrameworkElement.Data = path;
+            //_editing_FrameworkElement = path;
+        }
+
+        #endregion
+
         internal void Invalidate(FrameworkElement fe, Rail rail, byte edgeTransparency) {
             var path = fe as Path;
             if (path != null)
@@ -326,9 +396,34 @@ namespace Microsoft.Msagl.WpfGraphControl {
             if (Edge.Attr.ArrowAtTarget)
                 TargetArrowHeadPath.Data = DefiningTargetArrowHead(Edge.GeometryEdge.EdgeGeometry, PathStrokeThickness);
             SetPathStroke();
+            if (SelectedForEditing) {
+                UpdateEdtingUnderlying();
+            }
             if (VLabel != null)
                 ((IInvalidatable) VLabel).Invalidate();
         }
+
+        private void UpdateEdtingUnderlying() {
+            CreateEditingFramework();
+        }
+
+        //void DrawUnderlyingPolyline() {
+
+        //    Core.Geometry.SmoothedPolyline underlyingPolyline = Edge.GeometryEdge.UnderlyingPolyline;// editedEdge.DrawingEdge.GeometryEdge.UnderlyingPolyline;
+        //    if (underlyingPolyline != null) {
+        //        Curve curve = underlyingPolyline.CreateCurve();
+        //        Microsoft.Msagl.GraphViewerGdi.Draw.CreateGraphicsPath(curve);
+        //        var pen = new Pen(this.Edge.Attr.Color, (float)editedEdge.DrawingEdge.Attr.LineWidth);
+        //        IEnumerator<P2> en = underlyingPolyline.GetEnumerator();
+        //        en.MoveNext();
+        //        PointF p = P2P(en.Current);
+        //        while (en.MoveNext())
+        //            g.DrawLine(pen, p, p = P2P(en.Current));
+
+        //        foreach (P2 p2 in underlyingPolyline)
+        //            DrawCircleAroungPolylineCorner(g, p2, pen, editedEdge.RadiusOfPolylineCorner);
+        //    }
+        //}
 
         void SetPathStroke() {
             SetPathStrokeToPath(CurvePath);
