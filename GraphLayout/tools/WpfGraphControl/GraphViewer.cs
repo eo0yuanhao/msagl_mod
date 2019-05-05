@@ -114,6 +114,12 @@ namespace Microsoft.Msagl.WpfGraphControl {
         FrameworkElement _rectToFillGraphBackground;
         System.Windows.Shapes.Rectangle _rectToFillCanvas;
 
+        bool _panning = false;
+
+        bool Panning {
+            get => _panning;
+            set => _panning = value;
+        }
        
         GeometryGraph GeomGraph {
             get { return _drawingGraph.GeometryGraph; }
@@ -328,8 +334,8 @@ namespace Microsoft.Msagl.WpfGraphControl {
                     _mouseDownPositionInGraph = Common.MsaglPoint(e.GetPosition(_graphCanvas));
                     _mouseDownPositionInGraph_initialized = true;
                 }
-
-                Pan(e);
+                if(_panning)
+                    Pan(e);
             }
             else {
                 // Retrieve the coordinate of the mouse position.
