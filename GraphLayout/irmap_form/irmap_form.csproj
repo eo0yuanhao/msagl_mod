@@ -89,6 +89,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CommonDrawingUtilsForSamples\CommonDrawingUtilsForSamples\CommonDrawingUtilsForSamples.csproj">
+      <Project>{f8d4bd63-4cfe-4ab8-bd60-078a04e9fccf}</Project>
+      <Name>CommonDrawingUtilsForSamples</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Drawing\drawing.csproj">
       <Project>{b76f8f71-4b00-4242-be36-c9f0732511f7}</Project>
       <Name>drawing</Name>

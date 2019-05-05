@@ -7,17 +7,19 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+//-----------------------------
+using System.Drawing.Drawing2D;
 //----------------------
 using Microsoft.Msagl.Drawing;
 using Microsoft.Msagl.GraphViewerGdi;
 using Microsoft.Msagl;
-using System.Drawing.Drawing2D;
+using CommonDrawingUtilsForSamples;
 //---------------------------
 
 namespace irmap_form {
     using Curves=Microsoft.Msagl.Core.Geometry.Curves;
     public partial class Form1 : Form {
- 
+
         public Form1() {
             InitializeComponent();
             setup_graphViewer();
@@ -26,15 +28,43 @@ namespace irmap_form {
         }
         Edge oe = null;
         GViewer gViewer = null;
-        private void form_keydown(object sender, KeyEventArgs e) {
-            if (e.KeyCode == Keys.T) {
-                if (oe == null)
-                    return;
-                if (oe.Attr.ArrowheadAtTarget == ArrowStyle.None)
-                    oe.Attr.ArrowheadAtTarget = ArrowStyle.ODiamond;
-                else oe.Attr.ArrowheadAtTarget = ArrowStyle.None;
-                gViewer.Invalidate();
-            }
+        enum UserOprationMode {
+            None,Select=None,AddNode,OpLast
+        }
+        private UserOprationMode _useOpMode;
+        //void Form1_MouseUp(object sender, MsaglMouseEventArgs e) {
+        //    object obj = gViewer.GetObjectAt(e.X, e.Y);
+        //    Node node = null;
+        //    Edge edge = null;
+        //    var dnode = obj as DNode;
+        //    var dedge = obj as DEdge;
+        //    var dl = obj as DLabel;
+        //    if (dnode != null)
+        //        node = dnode.DrawingNode;
+        //    else if (dedge != null)
+        //        edge = dedge.DrawingEdge;
+        //    else if (dl != null) {
+        //        if (dl.Parent is DNode)
+        //            node = (dl.Parent as DNode).DrawingNode;
+        //        else if (dl.Parent is DEdge)
+        //            edge = (dl.Parent as DEdge).DrawingEdge;
+        //    }
+
+        //}
+        void graphViewer_ObjectUnderMouseCursorChanged(object sender, ObjectUnderMouseCursorChangedEventArgs e) {
+            //var n = e.NewObject.DrawingObject;// as DNode;
+            if (e.NewObject != null)
+                this.Text = "mouse hover in";
+            else this.Text = "mouse hover out";
+            //var node = gViewer.ObjectUnderMouseCursor as Node;// as IViewerNode;
+            //if (node != null) {
+            //    this.Text = node.Id;
+            //}
+            //else {
+            //    var edge = gViewer.ObjectUnderMouseCursor as Edge;// IViewerEdge;
+            //    if (edge != null)
+            //        this.Text = "edge clicked";
+            //}
         }
         private void setup_graphViewer() {
             Graph graph = new Graph();
@@ -45,61 +75,95 @@ namespace irmap_form {
             gv.Graph = graph;
             gv.Dock = DockStyle.Fill;
             this.Controls.Add(gv);
+
+            ///var node = new Node("55");
+            //node.Label.Text = nte.DefaultLabel;
+            //node.Attr.FillColor = nte.FillColor;
+            //node.Label.FontColor = nte.FontColor;
+            //node.Label.FontSize = nte.FontSize;
+            //node.Attr.Shape = Shape.Box;//. nte.Shape;
+            //var pos=gv.ScreenToSource(0.0, 0);
+            //IViewerNode dNode = gv.CreateIViewerNode(node, pos, null);
+            //gv.AddNode(dNode, true);
+            //var cnode=graph.FindNode("c");
+            //gv.AddEdge(cnode, node, true);
+            //IViewerEdge dEdge = gv.CreateEdgeWithGivenGeometry()
+            //gv.AddEdge()
+
             gViewer = gv;
             gViewer.KeyDown += Form1_KeyDown;
+            var viewer = (gViewer as IViewer);
+            //viewer.ObjectUnderMouseCursorChanged += graphViewer_ObjectUnderMouseCursorChanged;
+            viewer.MouseDown += gviewer_mousedown;
+            viewer.MouseUp += gviewer_mouseup;
         }
+
+        private void gviewer_mousedown(object sender, MsaglMouseEventArgs e) {
+            
+        }
+        void gviewer_mouseup(object sender, MsaglMouseEventArgs e) {
+            if(_useOpMode == UserOprationMode.Select) {
+                var obj=gViewer.GetObjectAt(new Point(e.X, e.Y));
+                if (obj == null)
+                    return;
+                var node = obj as DNode;
+                if(node != null) {
+                    Text = node.DrawingNode.Id;
+                }else {
+                    var edge = obj as DEdge;
+                    Text = edge.Edge.Source;
+                }
+            }else if(_useOpMode == UserOprationMode.AddNode) {
+                var pos = gViewer.ScreenToSource(e);
+                //var node = new Node("smt");
+
+                var gv = gViewer;
+                gv.AddNode(gv.CreateIViewerNode(new Node("ssss"), pos, null),true);
+                var ggg = gv.Graph;
+                if (ggg.NodeCount > 100)
+                    ;
+                ////(gv as IViewer).a   .add(), pos, null);
+                ////node.LabelText = "smt show";
+                //var graph = gViewer.Graph;
+                ////graph.AddNode(node);
+                //graph.AddEdge("11", "222");
+                ////DrawingUtilsForSamples.AddNode("smt", graph.GeometryGraph, 10, 2);
+                //gViewer.Graph = graph;
+                //var gv = gViewer;
+                ////IViewerNode n=gViewer.CreateIViewerNode(new Node("smart"));
+                ////gViewer.CreateIViewerNode(new Node("marks"), pos, null);
+                ////gViewer.AddNode(n, true);
+            }
+
+            //var viewer = gViewer as IViewer;
+            //viewer.
+        }
+
         private void edge_rendering_delegate(Edge edge, object graphics)
         {
             Graphics g = graphics as Graphics;
             var curve = edge.EdgeCurve;
-
-            //var patha = Draw.CreateGraphicsPath(curve);
-            //g.DrawPath(Pens.Black, patha);
-            //return false;
-
-            var t=curve.GetParameterAtLength(curve.Length / 2);
-            var del=curve.Derivative(t);
-            var k = del.Y / del.X;
+            var t_middle=curve.GetParameterAtLength(curve.Length / 2);
+            var dva=curve.Derivative(t_middle); //求中点的导数
+            //var k = del.Y / del.X;
             //this.Text = string.Format("x:{0},y:{1}", d.X, d.Y);
 
-            //Curves.CubicBezierSegment
-            //CubicBezierSegment bs = curve as CubicBezierSegment
-            var a = curve[t];
-            float x = (float) a.X, y = (float)a.Y;
-            Pen pen = Pens.Black;
-            var path = new System.Drawing.Drawing2D.GraphicsPath();
+            var midPoint = curve[t_middle];
+            float x = (float) midPoint.X, y = (float)midPoint.Y;
 
-            //path.AddCurve(new[] { new PointF(1, 4), new PointF(2, 6), new PointF(3, 5) });// ,new PointF() });
-            //path.AddLine(-2, -2, 2, 2);
-
-            //string _of_s_data = "m 0,0 c 0,-8.6 0.1,-17.3 1.8,-25.8   0.6,-2.5 1.2,-5.4 3.2,-7.3   1,-1 3,0 3.9,1.0   2.5,3.2 3.1,7.5 3.3,12.5";
-            //string _of_s_data2 = "M 0,0 c 0,8.6 -0.1,17.3 -1.8,25.8   -0.6,2.5 -1.2,5.4 -3.2,7.3   -1,1 -3,-0 -3.9,-1.0   -2.5,-3.2 -3.1,-7.5 -3.3,-12.5";
-
-            //Svg.SvgPath sp = new Svg.SvgPath();
-            //sp.PathData = Svg.SvgPathBuilder.Parse(_of_s_data + _of_s_data2 );
-            //Svg.ISvgRenderer render = Svg.SvgRenderer.FromNull();// .FromGraphics(g);
-
-            ////var converter = TypeDescriptor.GetConverter(typeof(Svg.Pathing.SvgPathSegmentList));
-            ////GraphicsPath ttt = sp.Path(render);
-            //var _of_s_path = sp.Path(render);
-
-            var outpath = dataDefine.graphicsPath_data.get_svg2(g);
-            path = outpath;
+            var path = dataDefine.graphicsPath_data.get_svg2(g);
             Matrix m= new Matrix();
             Func<double,double> rad2Deg = v => { return v * 180/Math.PI; };
 
             m.Translate(x, y);
-            m.Rotate((float)rad2Deg(Math.Atan2(del.Y, del.X)));//, new PointF(x, y));
+            m.Rotate((float)rad2Deg(Math.Atan2(dva.Y, dva.X)));//, new PointF(x, y));
             m.Scale(-0.2f, 0.2f);
             path.Transform(m);
 
-            //g.DrawPath(pen, path);
-            //var arrowLinePath = Draw.CreateGraphicsPath(curve);
-            //g.DrawPath(pen,arrowLinePath);
+            Pen pen = Pens.Black;
             g.FillEllipse(Brushes.White, x - 2, y - 2, 4, 4);
-            g.DrawEllipse(Pens.Black, x - 2, y - 2, 4, 4);
+            g.DrawEllipse(pen, x - 2, y - 2, 4, 4);
             g.DrawPath(pen, path);
-            path = null;
             //return false;
         }
         private void establish_graph(Graph graph) {
@@ -112,6 +176,7 @@ namespace irmap_form {
             //e.LabelText = "aa";
             //e.GeometryEdge.Label.
             e.DrawEdge_Last = edge_rendering_delegate;
+            Node n = g.FindNode("c");
             oe = e;
             //e.DrawEdgeDelegate
             //e.EdgeCurve
@@ -119,13 +184,16 @@ namespace irmap_form {
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e) {
-            if (e.KeyCode == Keys.T) {
+            Keys key = e.KeyCode;
+            if (key == Keys.T) {
                 if (oe == null)
                     return;
                 if (oe.Attr.ArrowheadAtTarget == ArrowStyle.None)
                     oe.Attr.ArrowheadAtTarget = ArrowStyle.ODiamond;
                 else oe.Attr.ArrowheadAtTarget = ArrowStyle.None;
                 gViewer.Invalidate();
+            }else if(key == Keys.N) {
+                _useOpMode = UserOprationMode.AddNode;
             }
         }
     }
