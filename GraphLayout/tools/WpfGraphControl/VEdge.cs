@@ -56,7 +56,7 @@ namespace Microsoft.Msagl.WpfGraphControl {
         public VEdge(Edge edge, FrameworkElement labelFrameworkElement) {
             Edge = edge;
             CurvePath = new Path {
-                Data = GetICurveWpfGeometry(edge.GeometryEdge.Curve),
+                Data = Common.GetICurveWpfGeometry(edge.GeometryEdge.Curve),
                 Tag = this
             };
 
@@ -144,19 +144,9 @@ namespace Microsoft.Msagl.WpfGraphControl {
         internal Path SourceArrowHeadPath { get; set; }
         internal Path TargetArrowHeadPath { get; set; }
 
-        static internal Geometry GetICurveWpfGeometry(ICurve curve) {
-            var streamGeometry = new StreamGeometry();
-            using (StreamGeometryContext context = streamGeometry.Open()) {
-                FillStreamGeometryContext(context, curve);
-                return streamGeometry;
-            }
-        }
 
-        static void FillStreamGeometryContext(StreamGeometryContext context, ICurve curve) {
-            if (curve == null)
-                return;
-            FillContextForICurve(context, curve);
-        }
+
+
 
         static internal void FillContextForICurve(StreamGeometryContext context,ICurve iCurve) {
             
@@ -486,7 +476,8 @@ namespace Microsoft.Msagl.WpfGraphControl {
             foreach (var fe in FrameworkElements) fe.Visibility = vis;
             if (vis == Visibility.Hidden)
                 return;
-            CurvePath.Data = GetICurveWpfGeometry(Edge.GeometryEdge.Curve);
+            
+            CurvePath.Data = Common.GetICurveWpfGeometry(Edge.GeometryEdge.Curve);
             if (Edge.Attr.ArrowAtSource)
                 SourceArrowHeadPath.Data = DefiningSourceArrowHead();
             if (Edge.Attr.ArrowAtTarget)
@@ -649,7 +640,7 @@ namespace Microsoft.Msagl.WpfGraphControl {
         FrameworkElement CreateFrameworkElementForRailCurve(Rail rail, ICurve iCurve, byte transparency) {
             var path = new Path
             {
-                Data = GetICurveWpfGeometry(iCurve),
+                Data = Common.GetICurveWpfGeometry(iCurve),
             };
             SetPathStrokeToRailPath(rail, path, transparency);
            

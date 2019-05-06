@@ -1740,7 +1740,7 @@ namespace Microsoft.Msagl.WpfGraphControl {
                     };
                 _graphCanvas.Children.Add(_targetArrowheadPathForRubberEdge);
             }
-            _rubberEdgePath.Data = VEdge.GetICurveWpfGeometry(edgeGeometry.Curve);
+            _rubberEdgePath.Data = Common.GetICurveWpfGeometry(edgeGeometry.Curve);
             _targetArrowheadPathForRubberEdge.Data = VEdge.DefiningTargetArrowHead(edgeGeometry,
                                                                                   edgeGeometry.LineWidth);
         }
@@ -1814,8 +1814,7 @@ namespace Microsoft.Msagl.WpfGraphControl {
                 //                };
                 //                graphCanvas.Children.Add(targetArrowheadPathForRubberLine);
             }
-            _rubberLinePath.Data =
-                VEdge.GetICurveWpfGeometry(new LineSegment(_sourcePortLocationForEdgeRouting, rubberEnd));
+            _rubberLinePath.Data = Common.GetICurveWpfGeometry(new LineSegment(_sourcePortLocationForEdgeRouting, rubberEnd));
         }
 
         public void StartDrawingRubberLine(Point startingPoint) {
