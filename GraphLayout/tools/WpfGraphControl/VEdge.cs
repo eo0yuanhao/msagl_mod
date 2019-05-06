@@ -130,7 +130,7 @@ namespace Microsoft.Msagl.WpfGraphControl {
         Geometry DefiningSourceArrowHead() {
             var streamGeometry = new StreamGeometry();
             using (StreamGeometryContext context = streamGeometry.Open()) {
-                AddArrow(context, Edge.GeometryEdge.Curve.Start, Edge.GeometryEdge.EdgeGeometry.SourceArrowhead.TipPosition, PathStrokeThickness);
+                AddArrow(context, Edge.GeometryEdge.Curve.Start, Edge.GeometryEdge.EdgeGeometry.SourceArrowhead.TipPosition, PathStrokeThickness,Edge.Attr.ArrowheadAtSource);
                 return streamGeometry;
             }
         }
@@ -250,8 +250,10 @@ namespace Microsoft.Msagl.WpfGraphControl {
             return ellipse.OrientedCounterclockwise() ? sweepAngle : -sweepAngle;
         }
 
-
-        static void AddArrow(StreamGeometryContext context,Point start,Point end, double thickness) {
+        static void AddArrow(StreamGeometryContext context, Point start, Point end, double thickness) {
+            AddArrow(context, start, end, thickness, ArrowStyle.NonSpecified);
+        }
+        static void AddArrow(StreamGeometryContext context,Point start,Point end, double thickness,ArrowStyle arrowStyle) {
             
             if(thickness > 1) {
                 Point dir = end - start;
@@ -282,12 +284,106 @@ namespace Microsoft.Msagl.WpfGraphControl {
                 double delta = Math.Min(dl / 2, thickness + thickness / 2);
                 dir *= (dl - delta) / dl;
                 end = start + dir;
-                dir = dir.Rotate(Math.PI / 2);
-                Point s = dir * HalfArrowAngleTan;
+                AddArrowWithStyle(context,start,end,dir,arrowStyle);
+                //dir = dir.Rotate(Math.PI / 2);
+                //Point s = dir * HalfArrowAngleTan;
 
-                context.BeginFigure(Common.WpfPoint(start + s),true,true);
-                context.LineTo(Common.WpfPoint(end),true,true);
-                context.LineTo(Common.WpfPoint(start - s),true,true);
+                //context.BeginFigure(Common.WpfPoint(start + s),true,true);
+                //context.LineTo(Common.WpfPoint(end),true,true);
+                //context.LineTo(Common.WpfPoint(start - s),true,true);
+            }
+        }
+
+        private static void AddArrowWithStyle(StreamGeometryContext con, Point start, Point end, Point dir,ArrowStyle style) {
+            Func<Point, System.Windows.Point> P2P = (Point p) => new System.Windows.Point(p.X, p.Y);
+            switch (style) {
+                
+                case ArrowStyle.NonSpecified:
+                case ArrowStyle.Normal: 
+                    {
+                        dir = dir.Rotate(Math.PI / 2);
+                        Point s = dir * HalfArrowAngleTan;
+
+                        con.BeginFigure(Common.WpfPoint(start + s), true, true);
+                        con.LineTo(Common.WpfPoint(end), true, true);
+                        con.LineTo(Common.WpfPoint(start - s), true, true);
+
+                    }
+                    break;
+                case ArrowStyle.None:
+                    break ;
+
+                case ArrowStyle.StraightLine:
+                    con.BeginFigure(Common.WpfPoint(start), false, false);
+                    con.LineTo(Common.WpfPoint(end), true, true);
+                    break;
+
+                case ArrowStyle.Tee: 
+                    {
+                        con.BeginFigure(Common.WpfPoint(start), false, false); // .DrawLine(p, PointF(start), PointF(end));
+                        con.LineTo(Common.WpfPoint(end), true, true);
+
+                        dir = dir.Rotate90Cw();
+                        Point s = dir * HalfArrowAngleTan;
+                        con.BeginFigure(P2P(start + s), false, false);
+                        con.LineTo(P2P(start - s), true, true);
+                    }
+                    break;
+                case ArrowStyle.Diamond:
+                    {
+                        dir = dir / 2;
+                        Point h = dir.Rotate90Ccw() * Math.Tan(ArrowAngle * Math.PI / 180.0);
+                        con.BeginFigure(P2P(start), true, true);
+                        con.LineTo(P2P(start + dir + h), true, true);
+                        con.LineTo(P2P(end), true, true);
+                        con.LineTo(P2P(start + dir - h), true, true);
+                    }
+                    break;
+                case ArrowStyle.ODiamond: 
+                    {
+                        dir=dir / 2;/// dir.Rotate90Ccw()/2;
+                        Point h = dir.Rotate90Ccw() * Math.Tan(ArrowAngle * Math.PI / 180.0);
+                        con.BeginFigure(P2P(start), false, true);
+                        con.LineTo(P2P(start + dir + h), true, true);
+                        con.LineTo(P2P(end), true, true);
+                        con.LineTo(P2P(start + dir - h), true, true);
+                    }
+                    break;
+                case ArrowStyle.Generalization: 
+                    {
+                        Point h = dir.Rotate90Ccw() * Math.Tan(ArrowAngle * Math.PI / 180.0);
+                        con.BeginFigure(P2P(start+h), false, true);
+                        con.LineTo(P2P(end), true, true);
+                        con.LineTo(P2P(start-h), true, true);
+                    }
+                    break;
+                case ArrowStyle.Circle: 
+                    {
+                        con.BeginFigure(P2P(start), false, true);
+                        var r = dir.Length / 2;
+                        //drawing a complete circle by two part arc
+                        con.ArcTo(P2P(end), new Size(r, r), 180, true, SweepDirection.Clockwise, true, true);
+                        con.ArcTo(P2P(start), new Size(r, r), 180, true, SweepDirection.Clockwise, true, true);
+                    }
+                    break;
+                case ArrowStyle.Vee: 
+                    {
+                        Point h = dir.Rotate90Ccw() * Math.Tan(ArrowAngle * Math.PI / 180.0);
+                        con.BeginFigure(P2P(start + h), false, false);
+                        con.LineTo(P2P(end), true, true);
+                        con.LineTo(P2P(start - h), true, true);
+                    }
+                    break;
+                case ArrowStyle.Triangle:
+                    {
+                        Point h = dir.Rotate90Ccw() * Math.Tan(ArrowAngle * Math.PI / 180.0);
+                        con.BeginFigure(P2P(end + h), false, true);
+                        con.LineTo(P2P(end - h), true, true);
+                        con.LineTo(P2P(start), true, true);
+                    }
+                    break;
+                default:
+                    break;
             }
         }
 

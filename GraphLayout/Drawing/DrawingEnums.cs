@@ -149,6 +149,10 @@ namespace Microsoft.Msagl.Drawing {
         /// </summary>
         Normal,
         /// <summary>
+        /// straight line only
+        /// </summary>
+        StraightLine,
+        /// <summary>
         /// Looks like a tee
         /// </summary>
         Tee,
