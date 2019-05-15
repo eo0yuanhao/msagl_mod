@@ -15,7 +15,12 @@ using System.Windows.Shapes;
 
 using Microsoft.Msagl.Drawing;
 using Microsoft.Msagl.WpfGraphControl;
-
+namespace DebugV {
+    public class D {
+        public static int tag = 0;
+        public static GraphViewer gv;
+    }
+}
 namespace IRxMap {
     /// <summary>
     /// MainWindow.xaml 的交互逻辑
@@ -28,21 +33,43 @@ namespace IRxMap {
     public partial class MainWindow : Window {
         
         DockPanel panel = new DockPanel();
+        GraphViewer _graphViewer;
         public MainWindow() {
             InitializeComponent();
             Content = panel;
 
             Loaded += window_loaded;
-
+            //window_loaded(null, null);
         }
 
-        void addNode(GraphViewer gv,string id) {
-            var node = new Node(id);
+        void addCordinate(GraphViewer gv) {
+            Line a1 = new Line();
+            a1.X1 = -100;
+            a1.Y1 = 0;
+            a1.X2 = 100;
+            a1.Y2 = 0;
+            a1.Stroke = Brushes.Black;
+            gv.GraphCanvas.Children.Add(a1);
+
+            Line a2 = new Line();
+            a2.X1 = 00;
+            a2.Y1 = 100;
+            a2.X2 = 0;
+            a2.Y2 = -100;
+            a2.Stroke = Brushes.Black;
+            gv.GraphCanvas.Children.Add(a2);
+        }
+
+        IViewerNode addNode(GraphViewer gv,string id,double x,double y) {
+            //var node = new Node(id);
             var graph = gv.Graph;
+            var node = graph.AddNode(id);
             var lnode = GeometryGraphCreator.CreateGeometryNode(graph, graph.GeometryGraph, node, ConnectionToGraph.Disconnected);
             lnode.BoundaryCurve = NodeBoundaryCurves.GetNodeBoundaryCurve(node, 15, 12);
             node.GeometryNode = lnode;
-            gv.CreateIViewerNode(node, new DPoint(-510, 60), null);
+            var vnode=gv.CreateIViewerNode(node, new DPoint(x, y), null);
+            return vnode;
+            //gv.AddNode(vnode, true);
             //gv.CreateVNode(node);
         }
         void addLineEdge(GraphViewer gv,string src, string tar) {
@@ -68,94 +95,132 @@ namespace IRxMap {
             var sss = oute.Target;
             //gv.RouteEdge(edge);
         }
-        void addLineEdge2(GraphViewer gv, string src, string tar) {
+        IViewerEdge addLineEdge2(GraphViewer gv, string src, string tar) {
             var graph = gv.Graph;
             var edge = graph.AddEdge(src, null, tar);
             edge.SourceNode.AddOutEdge(edge);
-            edge.TargetNode.AddInEdge(edge);
+            edge.TargetNode.AddInEdge(edge);            
 
             var ledge = GeometryGraphCreator.CreateGeometryEdgeFromDrawingEdge(edge);
             ledge.Source.AddOutEdge(ledge);
             ledge.Target.AddInEdge(ledge);
+            ledge.GeometryParent = graph.GeometryGraph;
+            graph.GeometryGraph.Edges.Add(ledge);
             edge.GeometryEdge = ledge;
             //ledge.Curve = new LineSegment(ledge.Source.Center, ledge.Target.Center);
             //gv.AddEdge(gv.CreateEdgeWithGivenGeometry(edge), true);
             Microsoft.Msagl.Routing.StraightLineEdges.RouteEdge(ledge, 0);
             var oute = gv.CreateEdgeWithGivenGeometry(edge);
             gv.LayoutEditor.AttachLayoutChangeEvent(oute);
-
+            return oute;
         }
-        public void window_loaded(object sender, RoutedEventArgs e) 
-        {
 
+        private bool edge_rendering_delegate(Edge edge, object edgeLine_path) 
+        {            
+            Path path = edgeLine_path as Path;
+            ICurve cv = edge.EdgeCurve;
+
+            var t_middle = cv.GetParameterAtLength(cv.Length / 2);
+            var dva = cv.Derivative(t_middle); //求中点的导数
+            var midPoint = cv[t_middle];// Common.WpfPoint( cv[t_middle]);
+            float x = (float)midPoint.X, y = (float)midPoint.Y;
+
+            var geo2 = DataDefine.get_svg2();
+            MatrixTransform mt = new MatrixTransform();
+            Func<double, double> rad2Deg = v => { return v * 180 / Math.PI; };
+            //mt.Matrix.
+            var deg = rad2Deg(Math.Atan2(dva.Y, dva.X));
+            var mat = Matrix.Identity;
+
+            mat.TranslatePrepend(x, y);
+            mat.RotatePrepend(deg );            
+            mat.ScalePrepend(-0.2f, 0.2f);
+            mt.Matrix = mat;
+            geo2.Transform = mt;
+
+            var circle = new EllipseGeometry(new Point(x, y), 2, 2);
+            PathGeometry pp = new PathGeometry();
+            pp.FillRule = FillRule.EvenOdd;
+            
+            pp.AddGeometry(Common.GetICurveWpfGeometry(cv));
+            pp.AddGeometry(circle);
+            pp.AddGeometry(geo2);
+            path.Data = pp;
+
+            return true;
+        }
+
+        int selfcounter = 0;
+        public void MouseWheelEventHandler(object sender, MouseWheelEventArgs e) {
+            this.Title = $"canvas receive {selfcounter++}";
+        }
+        public void window_loaded_prev(object sender, RoutedEventArgs e) {
             GraphViewer graphViewer = new GraphViewer();
-            graphViewer.BindToPanel(panel);
+
+            graphViewer.BindToPanel(mainGrid);
+            mainGrid.LastChildFill = true;
+            mainGrid.Background = Brushes.LightGray;
             Graph graph = new Graph();
-            graph.Attr.LayerDirection = LayerDirection.LR;
+            //graph.Attr.LayerDirection = LayerDirection.LR;
 
+            var edge = graph.AddEdge("A", "B");
 
-            graph.AddEdge("A", "B");
+            edge.DrawEdgeDelegate = edge_rendering_delegate;
             graphViewer.Graph = graph;
+            this.MouseWheel += MouseWheelEventHandler;
+            //panel.MouseWheel += MouseWheelEventHandler;
+            //graphViewer.GraphCanvas.MouseWheel += MouseWheelEventHandler;
             var gv = graphViewer;
-            //gv.LayoutEditor
-            //gv.ViewerGraph
+            _graphViewer = gv;
 
-            addNode(gv, "55");
-
+            addNode(gv, "55",0,0);
             addLineEdge2(gv, "B", "55");
-            gv.Graph = gv.Graph;
-            ////gv.RunLayoutInUIThread();
-
-
-
-            var vv = graph.GeometryGraph.Nodes.Count;
-            //var node = new Node("3");
-            //var lnode = GeometryGraphCreator.CreateGeometryNode(graph, graph.GeometryGraph, node, ConnectionToGraph.Disconnected);
-            //lnode.BoundaryCurve = NodeBoundaryCurves.GetNodeBoundaryCurve(node, 15, 12);
-            //node.GeometryNode = lnode;
-            //gv.CreateIViewerNode(node , new DPoint(0, 0), null);
-            ////gv.CreateVNode(node);
-
-            //var edge = graph.AddEdge("B", "label", "3");
-
-            //var ledge = GeometryGraphCreator.CreateGeometryEdgeFromDrawingEdge(edge);
-            //edge.GeometryEdge = ledge;
-            //ledge.Curve = new LineSegment(ledge.Source.Center, ledge.Target.Center);
-            //gv.AddEdge(gv.CreateEdgeWithGivenGeometry(edge), true);
-            ////gv.RouteEdge(edge);
-
-
-            //gv.ViewerGraph.
-            //gv.RouteEdge()
-
-            //Edge edge;
-            //graph.FindNode("B").Attr.Shape = Shape.House;
-            //edge = graph.AddEdge("B", "c");
-            //edge.Attr.ArrowheadAtTarget = ArrowStyle.Diamond;
-            //edge = graph.AddEdge("d", "e");
-            //edge.Attr.ArrowheadAtTarget = ArrowStyle.Generalization;
-            //edge = graph.AddEdge("e", "f");
-            //edge.Attr.ArrowheadAtTarget = ArrowStyle.ODiamond;
-
-            //edge = graph.AddEdge("g", "h");
-            //edge.Attr.ArrowheadAtTarget = ArrowStyle.Tee;
-
-            //graphViewer.Graph = graph; // throws exception
-            ////var gv = graphViewer;
-            ////gv.AddNode(new Node("ss"));
-            //var inode = gv.CreateIViewerNode(new Node("marks"), new DPoint(0, 0), null);
-            ////IViewerEdge egg= edge.
-            //var egg = graph.AddEdge("B", "", "marks");
-            ////var egg = new Edge("h", "", "marks");
-            ////egg.
-            //var layegg = GeometryGraphCreator.CreateGeometryEdgeFromDrawingEdge(egg);
-
-            //egg.GeometryEdge = layegg;
-            //layegg.Curve = new LineSegment(layegg.Source.Center, layegg.Target.Center);
-            //egg.GeometryEdge.LineWidth = 2;
-            //gv.AddEdge(gv.CreateEdgeWithGivenGeometry(egg), true);
-            //gv.AddNode(inode, true);
-            //graphViewer.Invalidate();
+            graph.GeometryGraph.UpdateBoundingBox();
+            DebugV.D.tag = 1;
+            gv.SetInitialTransform();
+            //gv.GraphCanvas.Background = Brushes.Red;
+            var ov = gv.GraphCanvas.Focus();           
         }
+        public void window_loaded(object sender, RoutedEventArgs e) {
+            panel.LastChildFill = true;
+            GraphViewer graphViewer = new GraphViewer();
+
+            graphViewer.BindToPanel(panel);
+
+            panel.Background = Brushes.LightGray;
+            panel.UpdateLayout();
+            Graph graph = new Graph();
+            //graph.Attr.LayerDirection = LayerDirection.LR;
+            //graph.AddNode("aaa");
+            graphViewer.Graph = graph;
+            //graphViewer.Graph.CreateGeometryGraph();
+
+            //var edge = graph.AddEdge("A", "B");
+            //edge.DrawEdgeDelegate = edge_rendering_delegate;
+            this.MouseWheel += MouseWheelEventHandler;
+            var gv = graphViewer;
+            _graphViewer = gv;
+
+            addNode(gv, "A", 0, 30);
+            addNode(gv, "B", 20,15);
+            var edge=addLineEdge2(gv, "A", "B");
+            edge.Edge.DrawEdgeDelegate = edge_rendering_delegate;
+            addNode(gv, "55", 0, 0);
+            addLineEdge2(gv, "B", "55");
+            graph.GeometryGraph.UpdateBoundingBox();
+            //DebugV.D.tag = 1;
+            DebugV.D.gv = gv;
+            gv.SetInitialTransform();
+            gv.Transform = gv.Transform;
+
+            //timer1 = new System.Windows.Threading.DispatcherTimer();
+            //timer1.Tick += TimeTick;
+            //timer1.Interval = TimeSpan.FromMilliseconds(500);
+            //timer1.Start();
+        }
+        void TimeTick(object sender, EventArgs e) {
+            Title = $"selfctt:{selfcounter++}";
+        }
+        System.Windows.Threading.DispatcherTimer timer1;
     }
 }

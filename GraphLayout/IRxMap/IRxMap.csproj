@@ -66,6 +66,7 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="DataDefine.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -101,6 +102,10 @@
     <ProjectReference Include="..\Drawing\drawing.csproj">
       <Project>{b76f8f71-4b00-4242-be36-c9f0732511f7}</Project>
       <Name>drawing</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MSAGL\Msagl.csproj">
+      <Project>{415D3E3F-7105-46C1-84D2-7ECB34213D92}</Project>
+      <Name>Msagl</Name>
     </ProjectReference>
     <ProjectReference Include="..\tools\WpfGraphControl\WpfGraphControl.csproj">
       <Project>{fce1d24e-cc6b-47bc-9ce4-427e5d56b71e}</Project>
