@@ -55,10 +55,17 @@ namespace Microsoft.Msagl.WpfGraphControl {
 
         public VEdge(Edge edge, FrameworkElement labelFrameworkElement) {
             Edge = edge;
-            CurvePath = new Path {
-                Data = Common.GetICurveWpfGeometry(edge.GeometryEdge.Curve),
-                Tag = this
-            };
+            if (edge.DrawEdgeDelegate != null) {
+                Path p = new Path();
+                edge.DrawEdgeDelegate(edge, p);
+                CurvePath = p;
+                p.Tag = this;
+            }else {
+                CurvePath = new Path {
+                    Data = Common.GetICurveWpfGeometry(edge.GeometryEdge.Curve),
+                    Tag = this
+                };
+            }
 
             EdgeAttrClone = edge.Attr.Clone();
 
@@ -476,8 +483,12 @@ namespace Microsoft.Msagl.WpfGraphControl {
             foreach (var fe in FrameworkElements) fe.Visibility = vis;
             if (vis == Visibility.Hidden)
                 return;
-            
-            CurvePath.Data = Common.GetICurveWpfGeometry(Edge.GeometryEdge.Curve);
+
+            if (Edge.DrawEdgeDelegate != null) {
+                Edge.DrawEdgeDelegate(Edge, CurvePath);
+            }  else {
+                CurvePath.Data = Common.GetICurveWpfGeometry(Edge.GeometryEdge.Curve);
+            }
             if (Edge.Attr.ArrowAtSource)
                 SourceArrowHeadPath.Data = DefiningSourceArrowHead();
             if (Edge.Attr.ArrowAtTarget)
