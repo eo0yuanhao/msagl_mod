@@ -43,6 +43,8 @@ using Microsoft.Msagl.Drawing;
 using Microsoft.Msagl.Layout.LargeGraphLayout;
 using Microsoft.Msagl.Miscellaneous;
 using Microsoft.Msagl.Miscellaneous.LayoutEditing;
+//---------------------
+
 using DrawingEdge = Microsoft.Msagl.Drawing.Edge;
 using ILabeledObject = Microsoft.Msagl.Drawing.ILabeledObject;
 using Label = Microsoft.Msagl.Drawing.Label;
@@ -56,12 +58,14 @@ using System.Windows.Shapes;
     using Edge = Microsoft.Msagl.Core.Layout.Edge;
     using Ellipse = System.Windows.Shapes.Ellipse;
     using LineSegment = Microsoft.Msagl.Core.Geometry.Curves.LineSegment;
-
+using DrawingNode = Microsoft.Msagl.Drawing.Node;
+using System.Diagnostics;
+using Microsoft.Msagl.Routing;
 
 namespace Microsoft.Msagl.WpfGraphControl {
     public class GraphViewer : IViewer {
         Path _targetArrowheadPathForRubberEdge;
-
+   
         Path _rubberEdgePath;
         Path _rubberLinePath;
         Point _sourcePortLocationForEdgeRouting;
@@ -113,8 +117,10 @@ namespace Microsoft.Msagl.WpfGraphControl {
 
         FrameworkElement _rectToFillGraphBackground;
         System.Windows.Shapes.Rectangle _rectToFillCanvas;
-
+        //----------------------- add some self variables 
         bool _panning = false;
+        FrameworkElement _nodeTextEditor;
+        IViewerNode _editingNode;
 
         bool Panning {
             get => _panning;
@@ -314,11 +320,20 @@ namespace Microsoft.Msagl.WpfGraphControl {
             if (MouseDown != null)
                 MouseDown(this, CreateMouseEventArgs(e));
 
+
+            if (_editingNode != null && _objectUnderMouseCursor != (_editingNode as object)) {
+                exitNodeEditor();
+            }
+
             if (e.Handled) return;
             _mouseDownPositionInGraph = Common.MsaglPoint(e.GetPosition(_graphCanvas));
             _mouseDownPositionInGraph_initialized = true;
         }
-
+        void exitNodeEditor() {                 
+            _graphCanvas.Children.Remove(_nodeTextEditor);
+            _nodeTextEditor = null;
+            _editingNode = null;
+        }
         
         void GraphCanvasMouseMove(object sender, MouseEventArgs e) {
             if (MouseMove != null)
@@ -518,13 +533,69 @@ namespace Microsoft.Msagl.WpfGraphControl {
         internal MsaglMouseEventArgs CreateMouseEventArgs(MouseEventArgs e) {
             return new GvMouseEventArgs(e, this);
         }
+        public void editingNode_editor_keyDown(object sender, KeyEventArgs e) {
+            if (e.Key == Key.Enter) {
+                TextBox tb = _nodeTextEditor as TextBox;
+                var n = _editingNode.Node;
+                n.Label.Text = tb.Text;
+                var pos = n.Pos;
+                n.GeometryNode.BoundaryCurve = GetNodeBoundaryCurveByMeasuringText(n);
+                n.GeometryNode.Center = pos;
+                var vnode = _editingNode as VNode;
+                var blk = vnode.FrameworkElementOfNodeForLabel as TextBlock;
+                blk.Text = tb.Text;
 
+                var mac = CreateTextBlock(n.Label);
+                blk.Width = mac.Width;
+                foreach (var dEdge in n.Edges) {
+                    StraightLineEdges.CreateSimpleEdgeCurveWithUnderlyingPolyline(dEdge.GeometryEdge);
+                    (drawingObjectsToIViewerObjects[dEdge] as VEdge).Invalidate();
+                }
+                vnode.Invalidate();
+                exitNodeEditor();
+            }
+            else if (e.Key == Key.Escape) {
+                exitNodeEditor();
+            }
+        }
         void GraphCanvasMouseLeftButtonUp(object sender, MouseEventArgs e) {
             OnMouseUp(e);
             clickCounter.AddMouseUp();
             if (_graphCanvas.IsMouseCaptured) {
                 e.Handled = true;
                 _graphCanvas.ReleaseMouseCapture();
+            }else {
+                if (clickCounter.UpCount == 2) {
+                    var vnode = clickCounter.ClickedObject as IViewerNode;
+                    if (vnode == null)
+                        return;
+                    Debug.Assert(_nodeTextEditor == null);
+
+                    var node = vnode.Node;
+                    var pos = Common.WpfPoint( node.GeometryNode.Center);
+                    var bound = node.GeometryNode.BoundingBox;
+                    var textBox = new TextBox();
+                    _nodeTextEditor = textBox;
+
+
+                    MatrixTransform tr = new MatrixTransform();
+                    Matrix mm = Matrix.Identity;
+                    mm.Scale(1, -1);
+                    tr.Matrix = mm;
+                    textBox.RenderTransform = tr;
+                    var text = node.Label.Text;
+                    textBox.Text = text ;
+                    if (text.Length <= 3)
+                        textBox.Width = bound.Width/text.Length * 4;
+                    else
+                        textBox.Width = bound.Width;
+                    textBox.Height = bound.Height;
+                    Panel.SetZIndex(textBox, 60000);
+                    textBox.KeyDown += editingNode_editor_keyDown;
+                    Common.SetFrameworkElementCenter(textBox, pos);
+                    _graphCanvas.Children.Add(textBox);
+                    _editingNode = vnode;
+                }
             }
         }
 
@@ -676,8 +747,8 @@ namespace Microsoft.Msagl.WpfGraphControl {
             }
         }
 
-        public void OnDragEnd(IEnumerable<IViewerObject> changedObjects) {
-            throw new NotImplementedException();
+        public void OnDragEnd(IEnumerable<IViewerObject> changedObjects) {        
+            GeomGraph.UpdateBoundingBox();
         }
 
         public double LineThicknessForEditing { get; set; }
@@ -1141,7 +1212,7 @@ namespace Microsoft.Msagl.WpfGraphControl {
 
         void PushDataFromLayoutGraphToFrameworkElements() {
             CreateRectToFillCanvas();
-            CreateAndPositionGraphBackgroundRectangle();
+            //CreateAndPositionGraphBackgroundRectangle();
             CreateVNodes();
             CreateEdges();
         }
@@ -1155,7 +1226,7 @@ namespace Microsoft.Msagl.WpfGraphControl {
             _rectToFillCanvas.Width = parent.ActualWidth;
             _rectToFillCanvas.Height = parent.ActualHeight;
 
-            _rectToFillCanvas.Fill = Brushes.Transparent;
+            _rectToFillCanvas.Fill = Brushes.WhiteSmoke;
             Panel.SetZIndex(_rectToFillCanvas, -2);
             _graphCanvas.Children.Add(_rectToFillCanvas);
         }
