@@ -1,15 +1,18 @@
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using Point = Microsoft.Msagl.Core.Geometry.Point;
+using Panel = System.Windows.Controls.Panel;
 
 namespace Microsoft.Msagl.WpfGraphControl {
     using ICurve =Microsoft.Msagl.Core.Geometry.Curves.ICurve;
-
+    using WPoint = System.Windows.Point;
     /// <summary>
     /// WPF public helper functions
     /// </summary>
-    public class Common {        
-        internal static System.Windows.Point WpfPoint(Point p) {
+    public class Common {
+        
+        public static System.Windows.Point WpfPoint(Point p) {
             return new System.Windows.Point(p.X, p.Y);
         }
 
@@ -55,6 +58,17 @@ namespace Microsoft.Msagl.WpfGraphControl {
                 return;
             VEdge.FillContextForICurve(context, curve);
         }
-
+        /// <summary>
+        ///  direct set pos to element center point
+        /// </summary>
+        /// <param name="fe"></param>
+        /// <param name="pos"></param>
+        public static void SetFrameworkElementCenter(FrameworkElement fe,WPoint pos) {
+            var w = fe.Width;
+            var h = fe.Height;
+            // _graphCanvas has a cordinate, which y axis is reverted
+            Canvas.SetLeft(fe, pos.X-w/2);
+            Canvas.SetTop(fe, pos.Y + h/2);
+        }
     }
 }
