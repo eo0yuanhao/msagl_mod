@@ -7,7 +7,7 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 
 
-namespace IRxMap {
+namespace Microsoft.Msagl.WpfGraphControl.ExtendEdgeDraw {
     class DataDefine {
         static Geometry _of_s_geometry;
         public static Geometry get_svg2() {
