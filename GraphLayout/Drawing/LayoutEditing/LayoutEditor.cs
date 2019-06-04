@@ -14,6 +14,7 @@ using Microsoft.Msagl.Prototype.LayoutEditing;
 using Microsoft.Msagl.Routing;
 using Microsoft.Msagl.Routing.Rectilinear;
 using GeometryNode = Microsoft.Msagl.Core.Layout.Node;
+using System.Collections.ObjectModel;
 
 namespace Microsoft.Msagl.Drawing {
     /// <summary>
@@ -30,7 +31,7 @@ namespace Microsoft.Msagl.Drawing {
         readonly Dictionary<IViewerObject, VoidDelegate> decoratorRemovalsDict =
             new Dictionary<IViewerObject, VoidDelegate>();
 
-        readonly Set<IViewerObject> dragGroup = new Set<IViewerObject>();
+        readonly public Set<IViewerObject> dragGroup = new Set<IViewerObject>();
 
         readonly GeometryGraphEditor geomGraphEditor = new GeometryGraphEditor();
         Graph graph;
@@ -46,6 +47,11 @@ namespace Microsoft.Msagl.Drawing {
         IViewerNode targetOfInsertedEdge;
         Port targetPort;
         IViewer viewer;
+        //------------------------ my added some variables
+        //IViewerObject _editingObject;
+
+        public event EventHandler<ObjectUnderMouseCursorChangedEventArgs> ObjectEditingStatusChanged;
+        
         EdgeGeometry EdgeGeometry { get; set; }
         InteractiveEdgeRouter InteractiveEdgeRouter { get; set; }
 
@@ -68,6 +74,7 @@ namespace Microsoft.Msagl.Drawing {
             RemoveEdgeDraggingDecorations = TheDefaultEdgeDecoratorStub;
 
             geomGraphEditor.ChangeInUndoRedoList += LayoutEditorChangeInUndoRedoList;
+            geomGraphEditor.Viewer = viewerPar;
 
         }
 
@@ -445,7 +452,8 @@ namespace Microsoft.Msagl.Drawing {
                     drawingEdge.Attr.LineWidth = (int) Math.Max(viewer.LineThicknessForEditing, w*2);
                 }
             }
-            viewer.Invalidate(obj);
+            //  change LineWidth will fire the visualChanged event ,so here don't need update again
+            //viewer.Invalidate(obj);
         }
 
         void TheDefaultObjectDecoratorRemover(IViewerObject obj) {
@@ -497,16 +505,24 @@ namespace Microsoft.Msagl.Drawing {
                                 geomEdge.UnderlyingPolyline = CreateUnderlyingPolyline(geomEdge);
 
                             SwitchToEdgeEditing(editableEdge);
+                            raiseObjectEditingStatusChanged(obj);
+                            dragGroup.Clear();
+                            dragGroup.Insert(editableEdge);
                         }
                     }
                 } else {
-                    if (obj.MarkedForDragging)
+                    IViewerObject ob = null;
+                    if (obj.MarkedForDragging) {
                         UnselectObjectForDragging(obj);
+
+                    }
                     else {
                         if (!modifierKeyIsPressed)
                             UnselectEverything();
                         SelectObjectForDragging(obj);
+                        ob = obj;
                     }
+                    raiseObjectEditingStatusChanged(ob);
                     UnselectEdge();
                 }
             }
@@ -565,6 +581,11 @@ namespace Microsoft.Msagl.Drawing {
             if (obj.MarkedForDragging == false) {
                 obj.MarkedForDragging = true;
                 dragGroup.Insert(obj);
+                //if (ObjectEditingStatusChanged != null) {
+                //    ObjectUnderMouseCursorChangedEventArgs e = new ObjectUnderMouseCursorChangedEventArgs();
+                //    e.NewObject = dragGroup.Last();
+                //    ObjectEditingStatusChanged(null, e);
+                //}
                 DecorateObjectForDragging(obj);
             }
         }
@@ -572,10 +593,15 @@ namespace Microsoft.Msagl.Drawing {
         void UnselectObjectForDragging(IViewerObject obj) {
             UnselectWithoutRemovingFromDragGroup(obj);
             dragGroup.Remove(obj);
+            if (ObjectEditingStatusChanged != null) {
+                raiseObjectEditingStatusChanged(null);
+            }
+
         }
 
         void UnselectWithoutRemovingFromDragGroup(IViewerObject obj) {
             obj.MarkedForDragging = false;
+            
             RemoveObjDraggingDecorations(obj);
         }
 
@@ -585,6 +611,9 @@ namespace Microsoft.Msagl.Drawing {
                 UnselectWithoutRemovingFromDragGroup(obj);
             }
             dragGroup.Clear();
+            if (ObjectEditingStatusChanged != null) {
+                raiseObjectEditingStatusChanged(null);
+            }
             UnselectEdge();
         }
 
@@ -870,9 +899,10 @@ namespace Microsoft.Msagl.Drawing {
                 if (viewer.ObjectUnderMouseCursor != null) {
                     AnalyzeLeftMouseButtonClick();
                     args.Handled = true;
-                }
-                else
+                } else { 
                     UnselectEverything();
+                    raiseObjectEditingStatusChanged(null);
+                }
             }
             else if (Dragging) {
                 if (!InsertingEdge) {
@@ -1007,18 +1037,28 @@ namespace Microsoft.Msagl.Drawing {
 
             var edgeRemoveCouple = new Tuple<string, VoidDelegate>("Remove edge",
                                                                     () => viewer.RemoveEdge(SelectedEdge, true));
-
+            var edgeModifyToStraightLine =new Tuple<string, VoidDelegate>("become to straight line",
+                                                ChangeEdgeToStraightLine);
+    
             if (cornerInfo.Item2 == PolylineCornerType.PreviousCornerForInsertion)
                 viewer.PopupMenus(
                     new Tuple<string, VoidDelegate>("Insert polyline corner", InsertPolylineCorner),
-                    edgeRemoveCouple);
+                    edgeModifyToStraightLine,edgeRemoveCouple);
             else if (cornerInfo.Item2 == PolylineCornerType.CornerToDelete)
                 viewer.PopupMenus(
                     new Tuple<string, VoidDelegate>("Delete polyline corner",
-                                                              DeleteCorner), edgeRemoveCouple);
+                                                              DeleteCorner),edgeModifyToStraightLine,  edgeRemoveCouple);
         }
 
-
+        void ChangeEdgeToStraightLine() {
+            StraightLineEdges.CreateSimpleEdgeCurveWithUnderlyingPolyline(SelectedEdge.Edge.GeometryEdge);
+            var lb = SelectedEdge.Edge.GeometryEdge.Label;
+            if (lb != null) {
+                var lp = new EdgeLabelPlacement(viewer.Graph.GeometryGraph, new[] { lb });
+                lp.Run();
+            }
+            viewer.Invalidate(SelectedEdge);
+        }
         void CheckIfDraggingPolylineVertex(MsaglMouseEventArgs e) {
             if (SelectedEdge != null && SelectedEdge.Edge.GeometryEdge.UnderlyingPolyline!=null) {
                 Site site = SelectedEdge.Edge.GeometryEdge.UnderlyingPolyline.HeadSite;
@@ -1341,5 +1381,19 @@ namespace Microsoft.Msagl.Drawing {
                 RemoveObjDraggingDecorations(edge);
 
         }
+
+        #region myAdded        
+        public IViewerObject EditingObject {
+            get;// => _editingObject;
+            private set;
+        }
+        public void raiseObjectEditingStatusChanged(IViewerObject obj) {
+            var ob = new ObjectUnderMouseCursorChangedEventArgs();
+            EditingObject = ob.NewObject = obj;
+            if(ObjectEditingStatusChanged!= null)
+                ObjectEditingStatusChanged(null, ob);
+        }
+        #endregion
+
     }
 }
