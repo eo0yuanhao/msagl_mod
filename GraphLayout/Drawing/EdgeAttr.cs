@@ -12,17 +12,17 @@ namespace Microsoft.Msagl.Drawing {
 #endif
     [Serializable]
     public sealed class EdgeAttr : AttributeBase {
-       
-        int separation=1;
-/// <summary>
-/// The separation of the edge in layers. The default is 1.
-/// </summary>
+
+        int separation = 1;
+        /// <summary>
+        /// The separation of the edge in layers. The default is 1.
+        /// </summary>
         public int Separation {
             get { return separation; }
             set { separation = value; }
         }
-  
-       
+
+
         int weight = 1;
 
         /// <summary>
@@ -82,7 +82,7 @@ namespace Microsoft.Msagl.Drawing {
             }
         }
 
-        double arrowheadLength=10;
+        double arrowheadLength = 10;
         /// <summary>
         /// the length of an arrowhead of the edge
         /// </summary>
@@ -93,7 +93,7 @@ namespace Microsoft.Msagl.Drawing {
                 RaiseVisualsChangedEvent(this, null);
             }
         }
-        
+
 
         /// <summary>
         /// ToString with a parameter.
@@ -114,7 +114,7 @@ namespace Microsoft.Msagl.Drawing {
 
 
             ret = Utils.ConcatWithComma(ret, Utils.ColorToString("color=", Color.ToString()),
-                                StylesToString(","),                              
+                                StylesToString(","),
                                 IdToString()
                                 );
 
@@ -123,34 +123,54 @@ namespace Microsoft.Msagl.Drawing {
 
         }
 
-       
-      
-   
-       
+
+
+
+
         /// <summary>
         /// Signals if an arrow should be drawn at the end.
         /// </summary>
         public bool ArrowAtTarget {
             get { return ArrowheadAtTarget != ArrowStyle.None; }
         }
-        
-      
-    /// <summary>
-    /// is true if need to draw an arrow at the source
-    /// </summary>
+
+
+        /// <summary>
+        /// is true if need to draw an arrow at the source
+        /// </summary>
         public bool ArrowAtSource {
-            get { return ! (ArrowheadAtSource == ArrowStyle.NonSpecified || ArrowheadAtSource ==ArrowStyle.None); }
+            get { return !(ArrowheadAtSource == ArrowStyle.NonSpecified || ArrowheadAtSource == ArrowStyle.None); }
         }
-    /// <summary>
-    /// gets or sets the position of the arrow head at the source
-    /// </summary>
-        double length=1;
+        /// <summary>
+        /// gets or sets the position of the arrow head at the source
+        /// </summary>
+        double length = 1;
         /// <summary>
         /// applicable for MDS layouts
         /// </summary>
         public double Length {
             get { return length; }
             set { length = value; }
-        }              
+        }
+        public Style FirstStyle {
+            get {
+                if (styles.Count == 0)
+                    return Style.Solid;
+                else return styles[0];
+            }
+            set {
+                if (styles.Count == 0) {
+                    styles.Add(value);
+                    RaiseVisualsChangedEvent();
+                }
+                else {
+                    if(styles[0] != value) {
+                        styles[0] = value;
+                        RaiseVisualsChangedEvent();
+                    }
+                }
+                
+            }
+        }
     }
 }
