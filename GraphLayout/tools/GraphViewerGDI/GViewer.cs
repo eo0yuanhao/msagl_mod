@@ -2355,6 +2355,27 @@ namespace Microsoft.Msagl.GraphViewerGdi {
         double GetFitScale() {
             return OriginalGraph == null ? 1 : Math.Min(panel.Width/originalGraph.Width, panel.Height/originalGraph.Height);
         }
+
+        #region My Added code
+        public IViewerObject GetIViewerObject(DrawingObject dobj) {
+            var node = dobj as DrawingNode;
+            if (node != null) {
+                return dGraph.FindDNode(node.Id);
+            }
+            else {
+                var edge = dobj as DrawingEdge;
+                Debug.Assert(edge != null);
+                var sn = dGraph.FindDNode(edge.Source);
+                var tn = dGraph.FindDNode(edge.Target);
+                var t = from e1 in sn.outEdges join e2 in tn.inEdges 
+                            on e1 equals e2 select e1;
+                if (t.Count() == 0)
+                    return null;
+                else return t.First();
+
+            }
+        }
+        #endregion
     }
 
 
