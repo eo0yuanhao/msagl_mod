@@ -37,7 +37,8 @@ namespace Microsoft.Msagl.Drawing
             double r = Math.Max(width / 2, height / 2);
             return CurveFactory.CreateEllipse(r, r, new P2(0, 0));
           }
-
+        // use a Box behavior stand for plaintext,but will not show it
+        case Shape.Plaintext:
         case Shape.Box:
               if (nodeAttr.XRadius != 0 || nodeAttr.YRadius != 0)
                   return CurveFactory.CreateRectangleWithRoundedCorners(width, height, nodeAttr.XRadius,
