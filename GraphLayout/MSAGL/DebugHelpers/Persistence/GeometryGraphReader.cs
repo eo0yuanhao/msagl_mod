@@ -322,6 +322,10 @@ namespace Microsoft.Msagl.DebugHelpers.Persistence
         {
             return r.ReadElementContentAsDouble();
         }
+        double ReadDoubleElement_token(GeometryToken token) {
+            //CheckToken(token);
+            return XmlReader.ReadElementContentAsDouble();
+        }
 
         [SuppressMessage("Microsoft.Globalization", "CA1304:SpecifyCultureInfo", MessageId = "System.String.ToLower"),
          SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase")]
@@ -900,7 +904,7 @@ namespace Microsoft.Msagl.DebugHelpers.Persistence
             ReadArrowheadAtTarget(edge);
             ReadLabelFromAttribute(edge);
             bool breakTheLoop = false;
-            //edge.UnderlyingPolyline = ReadUnderlyingPolyline();
+ //           edge.UnderlyingPolyline = ReadUnderlyingPolyline();
             _graph.Edges.Add(edge);
             if (XmlReader.IsEmptyElement)
             {
@@ -908,35 +912,86 @@ namespace Microsoft.Msagl.DebugHelpers.Persistence
                 return;
             }
             XmlRead();
-            do
-            {
-                GeometryToken token = GetElementTag();
-                switch (token)
-                {
-                    case GeometryToken.Curve:
-                        edge.Curve = ReadICurve();
-                        break;
-                    case GeometryToken.LineSegment:
-                        edge.Curve = ReadLineSeg();
-                        break;
-                    case GeometryToken.Edge:
-                        ReadEndElement();
-                        breakTheLoop = true;
-                        break;
-                    case GeometryToken.CubicBezierSegment:
-                        edge.Curve = ReadCubucBezierSegment();
-                        break;
-                    case GeometryToken.Polyline:
-
-                        break;
-                    default:
-                        breakTheLoop = true;
-                        break;
-                }
-                if (!breakTheLoop)
-                    XmlRead();
-            } while (!breakTheLoop);
+            //MoveToContent();
+            //do {
+            //    GeometryToken token = GetElementTag();
+            //    switch (token) {
+            //        case GeometryToken.GeoCurve:
+            //            edge.Curve = ReadGeoCurve();
+            //            XmlRead();
+            //            break;
+            //        case GeometryToken.UnderlyingPolyline:
+            //            edge.UnderlyingPolyline = ReadUnderlyingPolyline();
+            //            break;
+            //        default:
+            //            breakTheLoop = true;
+            //            break;
+            //    }
+            //} while (!breakTheLoop);
+            
+            edge.UnderlyingPolyline = ReadUnderlyingPolyline();
+            edge.Curve = ReadGeoCurve();
+            ReadEndElement();
             //XmlReader.Skip();
+        }
+
+        //private SmoothedPolyline ReadUnderlyingPolyline() {
+        //    XmlRead();
+        //    var p =ReadGeoCurve();
+            
+        //    ReadEndElement();
+        //    SmoothedPolyline.FromPoints()
+        //}
+
+        private ICurve ReadGeoCurve() {
+            XmlRead();
+            //bool breakTheLoop = false;
+            ICurve cv = null ;
+            //cv = ReadICurve();
+
+                                                    
+            GeometryToken token = GetElementTag();
+            switch (token) {
+                case GeometryToken.Curve:
+                    cv = ReadICurve();
+                    break;
+                case GeometryToken.LineSegment:
+                    cv = ReadLineSeg();
+                    break;
+                //case GeometryToken.GeoCurve:
+                    //ReadEndElement();
+                    //breakTheLoop = true;
+                    //if (XmlReader.NodeType == XmlNodeType.EndElement) {
+                    //    breakTheLoop = true;
+                    //    ReadEndElement();
+                    //    break;
+                    //}
+
+                    ////jyoti - added this if block for reloading msagl
+                    //if (XmlReader.NodeType == XmlNodeType.None) {
+                    //    breakTheLoop = true;
+                    //    break;
+                    //}
+                    //XmlRead();
+                    //break;
+                case GeometryToken.CubicBezierSegment:
+                    cv = ReadCubucBezierSegment();
+                    break;
+                case GeometryToken.Polyline:
+
+                    break;
+                default:
+                    //breakTheLoop = true;
+                    //ReadEndElement();  
+                    //XmlReader.Skip();
+                    break;
+            }
+                //if (!breakTheLoop)
+                //    XmlRead();
+  
+            XmlReader.Skip();
+            ReadEndElement();
+            return cv;
         }
 
         CubicBezierSegment ReadCubucBezierSegment() {
@@ -1048,42 +1103,50 @@ namespace Microsoft.Msagl.DebugHelpers.Persistence
             return 0;
         }
 
-        /*
-                SmoothedPolyline ReadUnderlyingPolyline() {
-                    CheckToken(GeometryToken.UnderlyingPolyline);
-                    XmlRead();
-                    if (ReadBooleanElement(GeometryToken.UnderlyingPolylineIsNull)) {
-                        ReadEndElement();
-                        return null;
-                    }
 
-                    Site s = ReadSite();
-                    var poly = new SmoothedPolyline(s);
-                    while (TokenIs(GeometryToken.PolylineSite)) {
-                        Site ns = ReadSite();
-                        s.Next = ns;
-                        ns.Previous = s;
-                        s = ns;
-                    }
-                    ReadEndElement();
-                    return poly;
-                }
-        */
+        SmoothedPolyline ReadUnderlyingPolyline() {
+            CheckToken(GeometryToken.UnderlyingPolyline);
+            XmlRead();
+            if (ReadBooleanElement(GeometryToken.UnderlyingPolylineIsNull)) {
+                ReadEndElement();
+                return null;
+            }
 
-        /*
-                Site ReadSite() {
-                    CheckToken(GeometryToken.PolylineSite);
-                    XmlRead();
-                    var s = new Site {
-                                         PreviousBezierSegmentFitCoefficient = ReadDoubleElement(GeometryToken.SiteK),
-                                         NextBezierSegmentFitCoefficient = ReadDoubleElement(GeometryToken.SiteK),
-                                         Point = ReadPointElement(GeometryToken.SiteV)
-                                     };
-                    ReadEndElement();
-                    return s;
-                }
-        */
+            Site s = ReadSite();
+            var poly = new SmoothedPolyline(s);
+            while (TokenIs(GeometryToken.PolylineSite)) {
+                Site ns = ReadSite();
+                s.Next = ns;
+                ns.Previous = s;
+                s = ns;
+            }
+            ReadEndElement();
+            return poly;
+        }
 
+
+
+        Site ReadSite() {
+            CheckToken(GeometryToken.PolylineSite);
+            XmlRead();
+            var s = new Site {
+                PreviousBezierSegmentFitCoefficient = ReadDoubleElement_token(GeometryToken.SiteK),
+                NextBezierSegmentFitCoefficient = ReadDoubleElement_token(GeometryToken.SiteK),
+                Point = ReadPointElement(GeometryToken.SiteV)
+            };
+            ReadEndElement();
+            return s;
+        }
+
+        private Point ReadPointElement(GeometryToken siteV) {
+            //private void WritePointElement(GeometryToken siteV, Point point) {
+            //    XmlWriter.WriteAttributeString("pt", point.X.ToString() + "," + point.Y.ToString());
+            string ptStr = XmlReader.ReadElementString("pt");
+            return ParsePoint(ptStr);
+            //var ss = ptStr.Split(new char[] {',' },StringSplitOptions.None);
+            //Point a= new Point(double.Parse( ss.First()),double.Parse( ss.Last()) );
+            //return a;
+        }
 
         Node ReadTargetNode()
         {

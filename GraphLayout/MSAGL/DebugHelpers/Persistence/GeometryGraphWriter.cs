@@ -504,8 +504,16 @@ namespace Microsoft.Msagl.DebugHelpers.Persistence
                 WriteAttribute(GeometryToken.Separation, edge.Separation);
             if (edge.Label != null)
                 WriteLabel(edge.Label);
-            WriteICurve(edge.Curve);
+            WriteUnderlyingPolyline(edge.UnderlyingPolyline);
+            WriteGeoCurve(edge.Curve);            
             WriteEndElement();
+        }
+
+        private void WriteGeoCurve(ICurve curve) {
+            WriteStartElement(GeometryToken.GeoCurve);
+            WriteICurve(curve);
+            WriteEndElement();
+            
         }
 
         void WriteDefaultDouble(GeometryToken geometryToken, double val, double defaultValue)
@@ -597,7 +605,7 @@ namespace Microsoft.Msagl.DebugHelpers.Persistence
             return String.Format("{0} {1} {2}", PointToString(label.Center), DoubleToString(label.Width), DoubleToString(label.Height));
         }
 
-        /*
+        
                 void WriteUnderlyingPolyline(SmoothedPolyline polylinePointsCollection) {
                     WriteStartElement(GeometryToken.UnderlyingPolyline);
                     if (polylinePointsCollection == null)
@@ -608,9 +616,9 @@ namespace Microsoft.Msagl.DebugHelpers.Persistence
                     }
                     WriteEndElement();
                 }
-        */
+        
 
-        /*
+        
                 void WritePolylineSites(SmoothedPolyline polylinePointsCollection) {
                     Site site = polylinePointsCollection.HeadSite;
                     do {
@@ -618,9 +626,9 @@ namespace Microsoft.Msagl.DebugHelpers.Persistence
                         site = site.Next;
                     } while (site != null);
                 }
-        */
+        
 
-        /*
+        
                 void WritePolylineSite(Site site) {
                     WriteStartElement(GeometryToken.PolylineSite);
                     WriteStringElement(GeometryToken.SiteK, site.PreviousBezierSegmentFitCoefficient);
@@ -628,8 +636,11 @@ namespace Microsoft.Msagl.DebugHelpers.Persistence
                     WritePointElement(GeometryToken.SiteV, site.Point);
                     WriteEndElement();
                 }
-        */
 
+        private void WritePointElement(GeometryToken siteV, Point point) {
+             //XmlWriter.WriteAttributeString("pt",point.X.ToString() +","+point.Y.ToString());
+             XmlWriter.WriteElementString("pt", PointToString(point));
+        }
 
         void WriteNodes()
         {
@@ -959,7 +970,9 @@ namespace Microsoft.Msagl.DebugHelpers.Persistence
         {
             XmlWriter.WriteElementString(tokens.ToString(), XmlConvert.ToString(element));
         }
-
+        void WriteStringElement(GeometryToken tokens,bool b) {
+            XmlWriter.WriteElementString(tokens.ToString(), XmlConvert.ToString(b));        
+        }
         /// <summary>
         /// writes the end element
         /// </summary>

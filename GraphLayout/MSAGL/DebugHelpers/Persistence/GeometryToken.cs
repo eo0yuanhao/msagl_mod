@@ -509,6 +509,13 @@ namespace Microsoft.Msagl.DebugHelpers {
         LabelVisibleFromScale,
         LabelOffset,
         LabelWidthToHeightRatio,
+
+
+        //added some token
+        /// <summary>
+        /// 
+        /// </summary>
+        GeoCurve,
         Unknown
     }
 }
