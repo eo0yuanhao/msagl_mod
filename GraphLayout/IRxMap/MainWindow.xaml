@@ -6,7 +6,58 @@
         xmlns:local="clr-namespace:IRxMap"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
-    <DockPanel x:Name="mainGrid" >
- 
-    </DockPanel>
+    <Grid KeyDown="Grid_KeyDown" KeyUp="Grid_KeyUp">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="142*"/>
+            <ColumnDefinition Width="651*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" >
+            <ToggleButton Content="Node" x:Name="nodeBtn" Width="40" Checked="NodeBtn_CheckChanged" Unchecked="NodeBtn_CheckChanged"/>
+            <ToggleButton Content="Edge" x:Name="edgeBtn"  Width="40" Checked="EdgeBtn_CheckChanged"  Unchecked="EdgeBtn_CheckChanged"/>
+            <ToggleButton Content="Select" x:Name="selectBtn"  Width="40" Checked="SelectBtn_CheckChanged"  Unchecked="SelectBtn_CheckChanged"/>
+            <Button Content="Save" x:Name="saveBtn"  Width="40" Click="SaveBtn_Click"/>
+            <Button Content="Load" x:Name="loadBtn"  Width="40" Click="LoadBtn_Click"/>              
+            <Button Content="SaveAs" x:Name="saveasBtn"  Width="40" Click="SaveasBtn_Click"/> 
+        </StackPanel>
+        <Grid x:Name="docPanel" Grid.Row="1" Grid.Column="2" ClipToBounds="True" />
+        <StackPanel x:Name="propertyPanel" Background="#FFD0D0D0"  Grid.Column="0" Grid.Row="1">
+            <Label Content="id:" Margin="0,0,77.2,0"/>
+            <TextBox x:Name="id_box" Height="23" TextWrapping="Wrap" LostFocus="Id_box_LostFocus" KeyDown="textBox_KeyDown"/>
+            <Label Content="Label:" />
+            <TextBox x:Name="label_box" Height="23" TextWrapping="Wrap" LostFocus="Label_box_LostFocus" KeyDown="textBox_KeyDown"/>
+
+            <Grid>
+                <GroupBox x:Name="nodeAttrGroup" Header="Attr" Visibility="Hidden">
+                    <StackPanel >
+                        <Label Content="shape style:" Margin="0,0,0.2,0"/>
+                        <ComboBox x:Name="shapeStyle_cmb" DisplayMemberPath="Enum_str" SelectedValuePath="Enum_value" SelectionChanged="ShapeStyle_cmb_SelectionChanged">
+
+                        </ComboBox>
+
+                    </StackPanel>
+                </GroupBox>
+                <GroupBox x:Name="edgeAttrGroup" Header="Attr" >
+                    <StackPanel >
+                        <Label Margin="0,0,0.2,0">
+                            edge type:
+                        </Label>
+                        <Label Content="Source Arrow:" />
+                        <ComboBox x:Name="srcArrowStyle_cmb" SelectionChanged="SrcArrowStyle_cmb_SelectionChanged" DisplayMemberPath="Enum_str" SelectedValuePath="Enum_value" ></ComboBox>
+                        <Label Content="Line style:" />
+                        <ComboBox x:Name="lineStyle_cmb" SelectionChanged="LineStyle_cmb_SelectionChanged" DisplayMemberPath="Enum_str" SelectedValuePath="Enum_value" ></ComboBox>
+                        <Label Content="Destination Arrow:" />
+                        <ComboBox x:Name="dstArrowStyle_cmb" SelectionChanged="DstArrowStyle_cmb_SelectionChanged" DisplayMemberPath="Enum_str" SelectedValuePath="Enum_value" ></ComboBox>
+                        <Label Content="decorate symbol:"/>
+                        <ComboBox x:Name="decSymbol_cmb" SelectionChanged="DecSymbol_cmb_SelectionChanged" />
+                    </StackPanel>
+                </GroupBox> 
+            </Grid>
+     
+        </StackPanel>
+
+    </Grid>
 </Window>
