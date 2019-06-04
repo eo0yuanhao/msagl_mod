@@ -268,5 +268,6 @@ namespace Microsoft.Msagl.Drawing {
         /// the transformation from the graph surface to the client viewport
         /// </summary>
         PlaneTransformation Transform { get; set; }
+        IViewerObject GetIViewerObject(DrawingObject dObj);
     }
 }
