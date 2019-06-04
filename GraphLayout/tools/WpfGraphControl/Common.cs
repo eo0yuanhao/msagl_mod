@@ -70,5 +70,21 @@ namespace Microsoft.Msagl.WpfGraphControl {
             Canvas.SetLeft(fe, pos.X-w/2);
             Canvas.SetTop(fe, pos.Y + h/2);
         }
+
+        public static Size MeasureText(string text, FontFamily family, double size) {
+            FormattedText formattedText = new FormattedText(
+                text,
+                System.Globalization.CultureInfo.CurrentCulture,
+                FlowDirection.LeftToRight,
+                new Typeface(family, new System.Windows.FontStyle(), FontWeights.Regular, FontStretches.Normal),
+                size,
+                Brushes.Black,
+                null);
+
+            return new Size(formattedText.Width, formattedText.Height);
+        }
+        public static Size MeasureLabel(Drawing.Label label) {
+            return MeasureText(label.Text, new FontFamily(label.FontName), label.FontSize);
+        }
     }
 }

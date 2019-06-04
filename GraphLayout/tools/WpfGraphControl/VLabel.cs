@@ -6,7 +6,7 @@ using System.Windows.Shapes;
 using Microsoft.Msagl.Drawing;
 
 namespace Microsoft.Msagl.WpfGraphControl {
-    internal class VLabel:IViewerObject,IInvalidatable {
+    public class VLabel:IViewerObject,IInvalidatable {
         internal readonly FrameworkElement FrameworkElement;
         bool markedForDragging;
 
@@ -49,6 +49,7 @@ namespace Microsoft.Msagl.WpfGraphControl {
         public event EventHandler UnmarkedForDraggingEvent;
         public void Invalidate() {
             var label = (Drawing.Label)DrawingObject;
+            
             Common.PositionFrameworkElement(FrameworkElement, label.Center, 1);
             var geomLabel = label.GeometryLabel;
             if (AttachmentLine != null)

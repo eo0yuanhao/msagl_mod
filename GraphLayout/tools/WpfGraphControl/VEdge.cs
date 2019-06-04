@@ -49,12 +49,27 @@ using Rectangle = Microsoft.Msagl.Core.Geometry.Rectangle;
 using Size = System.Windows.Size;
 
 namespace Microsoft.Msagl.WpfGraphControl {
-    internal class VEdge : IViewerEdge, IInvalidatable, IEditableObject {
+    public class VEdge : IViewerEdge, IInvalidatable, IEditableObject {
         
         internal FrameworkElement LabelFrameworkElement;
 
         public VEdge(Edge edge, FrameworkElement labelFrameworkElement) {
             Edge = edge;
+            var userData = edge.UserData;
+            if ( userData == null ) {
+                CurvePath = new Path {
+                    Data = Common.GetICurveWpfGeometry(edge.GeometryEdge.Curve),
+                    Tag = this
+                };
+            }    else {
+                Path p = new Path();
+                var deleg = GetDrawDelegate_FromUserData(userData);
+                edge.DrawEdgeDelegate = deleg;
+                edge.DrawEdgeDelegate(edge, p);
+                CurvePath = p;
+                p.Tag = this;
+            }
+
             if (edge.DrawEdgeDelegate != null) {
                 Path p = new Path();
                 edge.DrawEdgeDelegate(edge, p);
@@ -69,16 +84,18 @@ namespace Microsoft.Msagl.WpfGraphControl {
 
             EdgeAttrClone = edge.Attr.Clone();
 
+           
+            SourceArrowHeadPath = new Path {
+                Tag = this
+            };
             if (edge.Attr.ArrowAtSource)
-                SourceArrowHeadPath = new Path {
-                    Data = DefiningSourceArrowHead(),
-                    Tag = this
-                };
+                SourceArrowHeadPath.Data = DefiningSourceArrowHead();
+            TargetArrowHeadPath = new Path {
+                Tag = this
+            };
             if (edge.Attr.ArrowAtTarget)
-                TargetArrowHeadPath = new Path {
-                    Data = DefiningTargetArrowHead(Edge.GeometryEdge.EdgeGeometry, PathStrokeThickness),
-                    Tag = this
-                };
+                TargetArrowHeadPath.Data = DefiningTargetArrowHead(Edge.GeometryEdge.EdgeGeometry, PathStrokeThickness, Edge.Attr.ArrowheadAtTarget);
+               
 
             SetPathStroke();
 
@@ -102,6 +119,22 @@ namespace Microsoft.Msagl.WpfGraphControl {
             //_editingUnderlying_FrameworkElement.Fill = Brushes.Green;
         }
 
+        public DelegateToOverrideEdgeRendering GetDrawDelegate_FromUserData(object userData) {
+            string dele_str = userData.ToString();
+            switch (dele_str) {
+                case "center_of":
+                    return ExtendEdgeDraw.ExtendEdgeDrawDelegate.edge_rendering_delegate;
+                //case "":
+                //    break;
+                //case "":
+                //    break;
+                default:
+                    
+                    break;
+            }
+            return ExtendEdgeDraw.ExtendEdgeDrawDelegate.edge_rendering_delegate;
+        }
+
         internal IEnumerable<FrameworkElement> FrameworkElements {
             get {
                 if (SourceArrowHeadPath != null)
@@ -123,18 +156,23 @@ namespace Microsoft.Msagl.WpfGraphControl {
 
         internal EdgeAttr EdgeAttrClone { get; set; }
             
-        internal static Geometry DefiningTargetArrowHead(EdgeGeometry edgeGeometry, double thickness) {
+        internal static Geometry DefiningTargetArrowHead(EdgeGeometry edgeGeometry, double thickness,ArrowStyle arrowStyle) {
             if (edgeGeometry.TargetArrowhead == null || edgeGeometry.Curve==null)
                 return null;
             var streamGeometry = new StreamGeometry();
-            using (StreamGeometryContext context = streamGeometry.Open()) {
+            using (StreamGeometryContext context = streamGeometry.Open()) {  
                 AddArrow(context, edgeGeometry.Curve.End,
-                         edgeGeometry.TargetArrowhead.TipPosition, thickness);
+                         edgeGeometry.TargetArrowhead.TipPosition, thickness,arrowStyle);
                 return streamGeometry;
             }
         }
 
         Geometry DefiningSourceArrowHead() {
+            if(Edge.GeometryEdge.EdgeGeometry.SourceArrowhead == null) {
+                Edge.GeometryEdge.EdgeGeometry.SourceArrowhead = new Arrowhead { Length = Edge.Attr.ArrowheadLength };
+                var curve = Edge.GeometryEdge.UnderlyingPolyline.CreateCurve();
+                Arrowheads.TrimSplineAndCalculateArrowheads(Edge.GeometryEdge, curve, true, false);
+            }
             var streamGeometry = new StreamGeometry();
             using (StreamGeometryContext context = streamGeometry.Open()) {
                 AddArrow(context, Edge.GeometryEdge.Curve.Start, Edge.GeometryEdge.EdgeGeometry.SourceArrowhead.TipPosition, PathStrokeThickness,Edge.Attr.ArrowheadAtSource);
@@ -483,16 +521,77 @@ namespace Microsoft.Msagl.WpfGraphControl {
             foreach (var fe in FrameworkElements) fe.Visibility = vis;
             if (vis == Visibility.Hidden)
                 return;
+            //if (Edge.Attr.Styles != null) {
+            //    var en = Edge.Attr.Styles.GetEnumerator();
+            //    en.MoveNext();
+            //    var st = .MoveNext();
+            //    DoubleCollection dc = null;// new DoubleCollection();
+            //    switch (en.Current) {
+            //        case Drawing.Style.Dashed:
+            //            dc = new DoubleCollection(){0.2,5.3 };
+            //            break;
+            //        case Drawing.Style.Dotted:
+            //            dc = new DoubleCollection()  {3,1 };
+            //            break;
+            //        case Drawing.Style.Solid:
 
-            if (Edge.DrawEdgeDelegate != null) {
+            //        default:
+
+            //            break;
+            //    }
+            //    CurvePath.StrokeDashArray = dc;
+            //}
+
+            if (Edge.UserData != null) {                
+                if (Edge.DrawEdgeDelegate == null) {
+                    Edge.DrawEdgeDelegate=GetDrawDelegate_FromUserData(Edge.UserData);                    
+                }
                 Edge.DrawEdgeDelegate(Edge, CurvePath);
-            }  else {
+            }
+            else {
                 CurvePath.Data = Common.GetICurveWpfGeometry(Edge.GeometryEdge.Curve);
             }
-            if (Edge.Attr.ArrowAtSource)
+            //add curve path line styles in
+
+            if (Edge.Attr.ArrowAtSource) {
+                if (SourceArrowHeadPath == null) {
+                    SourceArrowHeadPath = new Path() { Tag = this };
+                }
+                    
                 SourceArrowHeadPath.Data = DefiningSourceArrowHead();
-            if (Edge.Attr.ArrowAtTarget)
-                TargetArrowHeadPath.Data = DefiningTargetArrowHead(Edge.GeometryEdge.EdgeGeometry, PathStrokeThickness);
+            }
+            else {
+                if (SourceArrowHeadPath != null) { //arrow head set to none
+                    if(SourceArrowHeadPath.Data != null) {
+                        SourceArrowHeadPath.Data = null;
+                        var curve = Edge.GeometryEdge.UnderlyingPolyline.CreateCurve();
+                        Edge.GeometryEdge.EdgeGeometry.SourceArrowhead = null;
+                        Arrowheads.TrimSplineAndCalculateArrowheads(Edge.GeometryEdge, curve, true, false);
+                    }
+
+                    
+                }
+            }
+                
+            if (Edge.Attr.ArrowAtTarget) {
+                if (TargetArrowHeadPath == null) {
+                    TargetArrowHeadPath = new Path() {                       
+                        Tag = this
+                    };
+                    
+                }
+                TargetArrowHeadPath.Data = DefiningTargetArrowHead(Edge.GeometryEdge.EdgeGeometry, PathStrokeThickness, Edge.Attr.ArrowheadAtTarget);
+            }
+            else {
+                if (TargetArrowHeadPath != null) {
+                    var curve = Edge.GeometryEdge.UnderlyingPolyline.CreateCurve();
+                    Edge.GeometryEdge.EdgeGeometry.TargetArrowhead = null;
+                    Arrowheads.TrimSplineAndCalculateArrowheads(Edge.GeometryEdge, curve, true, false);
+                    TargetArrowHeadPath.Data = null;
+                }
+            }
+                
+            //set path stroke and line styles
             SetPathStroke();
             if (SelectedForEditing) {
                 UpdateEdtingUnderlying();
@@ -573,6 +672,8 @@ namespace Microsoft.Msagl.WpfGraphControl {
                     var f = DashSize();
                     path.StrokeDashArray = new DoubleCollection {f, f};
                     //CurvePath.StrokeDashOffset = f;
+                }else if(style == Drawing.Style.Solid) {
+                    path.StrokeDashArray = null; 
                 }
             }
         }

@@ -94,7 +94,7 @@ namespace Microsoft.Msagl.WpfGraphControl {
         readonly Canvas _graphCanvas = new Canvas();
         Graph _drawingGraph;
         
-        readonly Dictionary<DrawingObject, FrameworkElement> drawingObjectsToFrameworkElements =
+        public readonly Dictionary<DrawingObject, FrameworkElement> drawingObjectsToFrameworkElements =
             new Dictionary<DrawingObject, FrameworkElement>();
 
         readonly LayoutEditor layoutEditor;
@@ -119,13 +119,10 @@ namespace Microsoft.Msagl.WpfGraphControl {
         System.Windows.Shapes.Rectangle _rectToFillCanvas;
         //----------------------- add some self variables 
         bool _panning = false;
-        FrameworkElement _nodeTextEditor;
-        IViewerNode _editingNode;
+        //FrameworkElement _nodeTextEditor;
+        //IViewerNode _editingNode;
 
-        bool Panning {
-            get => _panning;
-            set => _panning = value;
-        }
+
        
         GeometryGraph GeomGraph {
             get { return _drawingGraph.GeometryGraph; }
@@ -157,6 +154,60 @@ namespace Microsoft.Msagl.WpfGraphControl {
             clickCounter.Elapsed += ClickCounterElapsed;
         }
 
+        #region MyAdded
+        public event EventHandler<MsaglMouseEventArgs> MouseDoubleClick;
+        public bool Panning {
+            get => _panning;
+            set => _panning = value;
+        }
+        /// <summary>a
+        /// Get IViewerObject from GraphViewer ,for later manipulate
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public IViewerObject GetIViewerObject(DrawingObject obj) {
+            return drawingObjectsToIViewerObjects[obj];
+        }
+
+        //public void editingNode_editor_keyDown(object sender, KeyEventArgs e) {
+        //    if (e.Key == Key.Enter) {
+        //        TextBox tb = _nodeTextEditor as TextBox;
+
+        //        updateVNodeLabelText(_editingNode as VNode, tb.Text);
+        //        exitNodeEditor();
+        //    }
+        //    else if (e.Key == Key.Escape) {
+        //        exitNodeEditor();
+        //    }
+        //}
+
+        public void updateVNodeLabelText(VNode vnode,string newLabelText) {
+            var n = vnode.Node;
+            n.Label.Text = newLabelText;
+            var pos = n.Pos;
+            n.GeometryNode.BoundaryCurve = GetNodeBoundaryCurveByMeasuringText(n);
+            n.GeometryNode.Center = pos;
+            var blk = vnode.FrameworkElementOfNodeForLabel as TextBlock;
+            blk.Text = newLabelText;
+            blk.Width =  Common.MeasureLabel(n.Label).Width;
+            foreach (var dEdge in n.Edges) {
+                StraightLineEdges.CreateSimpleEdgeCurveWithUnderlyingPolyline(dEdge.GeometryEdge);
+                (drawingObjectsToIViewerObjects[dEdge] as VEdge).Invalidate();
+            }
+            vnode.Invalidate();
+        }
+
+        public void RemoveLabel(VLabel lab) {
+            lock (this) {
+                var dEdge = lab.DrawingObject as DrawingEdge;
+                Debug.Assert(dEdge != null);
+                _graphCanvas.Children.Remove(drawingObjectsToFrameworkElements[dEdge]);
+                dEdge.Label = null;
+                dEdge.GeometryEdge.Label = null;
+            }
+        }
+
+        #endregion  end of MyAdded
 
         #region WPF stuff
 
@@ -321,19 +372,19 @@ namespace Microsoft.Msagl.WpfGraphControl {
                 MouseDown(this, CreateMouseEventArgs(e));
 
 
-            if (_editingNode != null && _objectUnderMouseCursor != (_editingNode as object)) {
-                exitNodeEditor();
-            }
+            //if (_editingNode != null && _objectUnderMouseCursor != (_editingNode as object)) {
+            //    exitNodeEditor();
+            //}
 
             if (e.Handled) return;
             _mouseDownPositionInGraph = Common.MsaglPoint(e.GetPosition(_graphCanvas));
             _mouseDownPositionInGraph_initialized = true;
         }
-        void exitNodeEditor() {                 
-            _graphCanvas.Children.Remove(_nodeTextEditor);
-            _nodeTextEditor = null;
-            _editingNode = null;
-        }
+        //void exitNodeEditor() {                 
+        //    _graphCanvas.Children.Remove(_nodeTextEditor);
+        //    _nodeTextEditor = null;
+        //    _editingNode = null;
+        //}
         
         void GraphCanvasMouseMove(object sender, MouseEventArgs e) {
             if (MouseMove != null)
@@ -533,31 +584,6 @@ namespace Microsoft.Msagl.WpfGraphControl {
         internal MsaglMouseEventArgs CreateMouseEventArgs(MouseEventArgs e) {
             return new GvMouseEventArgs(e, this);
         }
-        public void editingNode_editor_keyDown(object sender, KeyEventArgs e) {
-            if (e.Key == Key.Enter) {
-                TextBox tb = _nodeTextEditor as TextBox;
-                var n = _editingNode.Node;
-                n.Label.Text = tb.Text;
-                var pos = n.Pos;
-                n.GeometryNode.BoundaryCurve = GetNodeBoundaryCurveByMeasuringText(n);
-                n.GeometryNode.Center = pos;
-                var vnode = _editingNode as VNode;
-                var blk = vnode.FrameworkElementOfNodeForLabel as TextBlock;
-                blk.Text = tb.Text;
-
-                var mac = CreateTextBlock(n.Label);
-                blk.Width = mac.Width;
-                foreach (var dEdge in n.Edges) {
-                    StraightLineEdges.CreateSimpleEdgeCurveWithUnderlyingPolyline(dEdge.GeometryEdge);
-                    (drawingObjectsToIViewerObjects[dEdge] as VEdge).Invalidate();
-                }
-                vnode.Invalidate();
-                exitNodeEditor();
-            }
-            else if (e.Key == Key.Escape) {
-                exitNodeEditor();
-            }
-        }
         void GraphCanvasMouseLeftButtonUp(object sender, MouseEventArgs e) {
             OnMouseUp(e);
             clickCounter.AddMouseUp();
@@ -566,35 +592,38 @@ namespace Microsoft.Msagl.WpfGraphControl {
                 _graphCanvas.ReleaseMouseCapture();
             }else {
                 if (clickCounter.UpCount == 2) {
-                    var vnode = clickCounter.ClickedObject as IViewerNode;
-                    if (vnode == null)
-                        return;
-                    Debug.Assert(_nodeTextEditor == null);
+                    if (MouseDoubleClick != null) {
+                        MouseDoubleClick(sender, CreateMouseEventArgs(e));
+                    }
+                    //var vnode = clickCounter.ClickedObject as IViewerNode;
+                    //if (vnode == null)
+                    //    return;
+                    //Debug.Assert(_nodeTextEditor == null);
 
-                    var node = vnode.Node;
-                    var pos = Common.WpfPoint( node.GeometryNode.Center);
-                    var bound = node.GeometryNode.BoundingBox;
-                    var textBox = new TextBox();
-                    _nodeTextEditor = textBox;
+                    //var node = vnode.Node;
+                    //var pos = Common.WpfPoint( node.GeometryNode.Center);
+                    //var bound = node.GeometryNode.BoundingBox;
+                    //var textBox = new TextBox();
+                    //_nodeTextEditor = textBox;
 
 
-                    MatrixTransform tr = new MatrixTransform();
-                    Matrix mm = Matrix.Identity;
-                    mm.Scale(1, -1);
-                    tr.Matrix = mm;
-                    textBox.RenderTransform = tr;
-                    var text = node.Label.Text;
-                    textBox.Text = text ;
-                    if (text.Length <= 3)
-                        textBox.Width = bound.Width/text.Length * 4;
-                    else
-                        textBox.Width = bound.Width;
-                    textBox.Height = bound.Height;
-                    Panel.SetZIndex(textBox, 60000);
-                    textBox.KeyDown += editingNode_editor_keyDown;
-                    Common.SetFrameworkElementCenter(textBox, pos);
-                    _graphCanvas.Children.Add(textBox);
-                    _editingNode = vnode;
+                    //MatrixTransform tr = new MatrixTransform();
+                    //Matrix mm = Matrix.Identity;
+                    //mm.Scale(1, -1);
+                    //tr.Matrix = mm;
+                    //textBox.RenderTransform = tr;
+                    //var text = node.Label.Text;
+                    //textBox.Text = text ;
+                    //if (text.Length <= 3)
+                    //    textBox.Width = bound.Width/text.Length * 4;
+                    //else
+                    //    textBox.Width = bound.Width;
+                    //textBox.Height = bound.Height;
+                    //Panel.SetZIndex(textBox, 60000);
+                    //textBox.KeyDown += editingNode_editor_keyDown;
+                    //Common.SetFrameworkElementCenter(textBox, pos);
+                    //_graphCanvas.Children.Add(textBox);
+                    //_editingNode = vnode;
                 }
             }
         }
@@ -1002,7 +1031,22 @@ namespace Microsoft.Msagl.WpfGraphControl {
             layoutEditor.AttachLayoutChangeEvent(vNode);
             return vNode;
         }
+        public IViewerNode CreateIViewerNode(Drawing.Node drawingNode, Point center, object visualElement) {
+            if (_drawingGraph == null)
+                return null;
+            var frameworkElement = visualElement as FrameworkElement ?? CreateTextBlockForDrawingObj(drawingNode);
+            var width = frameworkElement.Width + 2 * drawingNode.Attr.LabelMargin;
+            var height = frameworkElement.Height + 2 * drawingNode.Attr.LabelMargin;
+            var bc = NodeBoundaryCurves.GetNodeBoundaryCurve(drawingNode, width, height);
+            drawingNode.GeometryNode = new Node(bc, drawingNode) { Center = center };
+            var vNode = CreateVNode(drawingNode);
+            _drawingGraph.AddNode(drawingNode);
+            _drawingGraph.GeometryGraph.Nodes.Add(drawingNode.GeometryNode);
+            layoutEditor.AttachLayoutChangeEvent(vNode);
+            MakeRoomForNewNode(drawingNode);
 
+            return vNode;
+        }
         void ClearGraphViewer() {
             ClearGraphCanvasChildren();
 
@@ -1271,7 +1315,7 @@ namespace Microsoft.Msagl.WpfGraphControl {
             _graphCanvas.Children.Add(vEdge.EditingUnderlyingPath);
         }
 
-        int ZIndexOfEdge(DrawingEdge edge) {
+        public int ZIndexOfEdge(DrawingEdge edge) {
             var source = (VNode) drawingObjectsToIViewerObjects[edge.SourceNode];
             var target = (VNode) drawingObjectsToIViewerObjects[edge.TargetNode];
 
@@ -1285,7 +1329,7 @@ namespace Microsoft.Msagl.WpfGraphControl {
             });
         }
 
-        void SetVEdgeLabel(DrawingEdge edge, VEdge vEdge, int zIndex) {
+        public void SetVEdgeLabel(DrawingEdge edge, VEdge vEdge, int zIndex) {
             FrameworkElement frameworkElementForEdgeLabel;
             if (!drawingObjectsToFrameworkElements.TryGetValue(edge, out frameworkElementForEdgeLabel)) {
                 drawingObjectsToFrameworkElements[edge] =
@@ -1481,7 +1525,7 @@ namespace Microsoft.Msagl.WpfGraphControl {
         }
 
 
-        void AssignLabelWidthHeight(Core.Layout.ILabeledObject labeledGeomObj,
+        public void AssignLabelWidthHeight(Core.Layout.ILabeledObject labeledGeomObj,
                                     DrawingObject drawingObj) {
             if (drawingObjectsToFrameworkElements.ContainsKey(drawingObj)) {
                 FrameworkElement fe = drawingObjectsToFrameworkElements[drawingObj];
@@ -1510,22 +1554,6 @@ namespace Microsoft.Msagl.WpfGraphControl {
 
         TextBlock textBoxForApproxNodeBoundaries;
 
-        public static Size MeasureText(string text,
-        FontFamily family, double size)
-        {
-
-            
-            FormattedText formattedText = new FormattedText(
-                text,
-                System.Globalization.CultureInfo.CurrentCulture,
-                FlowDirection.LeftToRight,
-                new Typeface(family, new System.Windows.FontStyle(), FontWeights.Regular, FontStretches.Normal),
-                size,
-                Brushes.Black,
-                null);
-
-            return new Size(formattedText.Width, formattedText.Height);
-        }
 
         ICurve GetNodeBoundaryCurveByMeasuringText(Drawing.Node node)
         {
@@ -1537,7 +1565,7 @@ namespace Microsoft.Msagl.WpfGraphControl {
             }
             else
             {
-                var size = MeasureText(node.LabelText, new FontFamily(node.Label.FontName), node.Label.FontSize);
+                var size = Common.MeasureText(node.LabelText, new FontFamily(node.Label.FontName), node.Label.FontSize);
                 width = size.Width;
                 height = size.Height;
             }
@@ -1646,7 +1674,7 @@ namespace Microsoft.Msagl.WpfGraphControl {
         }
 
 
-        FrameworkElement CreateDefaultFrameworkElementForDrawingObject(DrawingObject drawingObject) {
+        public FrameworkElement CreateDefaultFrameworkElementForDrawingObject(DrawingObject drawingObject) {
             lock (this) {
                 var textBlock = CreateTextBlockForDrawingObj(drawingObject);
                 if (textBlock != null)
@@ -1813,7 +1841,7 @@ namespace Microsoft.Msagl.WpfGraphControl {
             }
             _rubberEdgePath.Data = Common.GetICurveWpfGeometry(edgeGeometry.Curve);
             _targetArrowheadPathForRubberEdge.Data = VEdge.DefiningTargetArrowHead(edgeGeometry,
-                                                                                  edgeGeometry.LineWidth);
+                                                                                  edgeGeometry.LineWidth,ArrowStyle.NonSpecified);
         }
 
         
@@ -1895,22 +1923,7 @@ namespace Microsoft.Msagl.WpfGraphControl {
 
 
 
-        public IViewerNode CreateIViewerNode(Drawing.Node drawingNode, Point center, object visualElement) {
-            if (_drawingGraph == null)
-                return null;
-            var frameworkElement = visualElement as FrameworkElement ?? CreateTextBlockForDrawingObj(drawingNode);
-            var width = frameworkElement.Width + 2*drawingNode.Attr.LabelMargin;
-            var height = frameworkElement.Height + 2*drawingNode.Attr.LabelMargin;
-            var bc = NodeBoundaryCurves.GetNodeBoundaryCurve(drawingNode, width, height);
-            drawingNode.GeometryNode = new Node(bc, drawingNode) {Center = center};
-            var vNode = CreateVNode(drawingNode);
-            _drawingGraph.AddNode(drawingNode);
-            _drawingGraph.GeometryGraph.Nodes.Add(drawingNode.GeometryNode);
-            layoutEditor.AttachLayoutChangeEvent(vNode);
-            MakeRoomForNewNode(drawingNode);
 
-            return vNode;
-        }
 
         void MakeRoomForNewNode(Drawing.Node drawingNode) {
             IncrementalDragger incrementalDragger = new IncrementalDragger(new[] {drawingNode.GeometryNode},

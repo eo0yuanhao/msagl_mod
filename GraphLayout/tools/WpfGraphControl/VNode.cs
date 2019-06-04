@@ -30,6 +30,8 @@ namespace Microsoft.Msagl.WpfGraphControl {
         Path _collapseSymbolPath;
         readonly Brush _collapseSymbolPathInactive = Brushes.Silver;
 
+        //bool _selectedForEditing = false;
+
         internal int ZIndex {
             get {
                 var geomNode = Node.GeometryNode;
@@ -313,7 +315,9 @@ namespace Microsoft.Msagl.WpfGraphControl {
                 case Shape.DoubleCircle:
                     geometry = DoubleCircle();
                     break;
-
+                case Shape.Plaintext:
+                    geometry = null;
+                    break;
 
                 default:
                     geometry = GetEllipseGeometry();
@@ -436,6 +440,7 @@ namespace Microsoft.Msagl.WpfGraphControl {
         public IEnumerable<IViewerEdge> SelfEdges {
             get { return Node.SelfEdges.Select(e => _funcFromDrawingEdgeToVEdge(e)); }
         }
+
         public void Invalidate() {
             if (!Node.IsVisible) {
                 foreach (var fe in FrameworkElements)
