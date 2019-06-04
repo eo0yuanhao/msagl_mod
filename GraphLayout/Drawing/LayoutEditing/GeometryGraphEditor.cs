@@ -32,6 +32,10 @@ namespace Microsoft.Msagl.Drawing {
         bool undoMode = true;
         IncrementalDragger incrementalDragger;
 
+        internal IViewer Viewer {
+            get;set;
+        }
+
         internal UndoRedoActionsList UndoRedoActionsList {
             get { return undoRedoActionsList; }
             set { undoRedoActionsList = value; }
@@ -222,7 +226,22 @@ namespace Microsoft.Msagl.Drawing {
             }
 
             PropagateChangesToClusterParents();
-            DragEdgesAsStraighLines(delta);
+            if(Viewer.ModifierKeys == ModifierKeys.Control) {
+                DragEdgesAsStraighLines(delta);
+            }
+            else {
+                DragEdgesAsRatio(delta);
+            }
+            
+        }
+
+        private void DragEdgesAsRatio(Point delta) {
+            foreach (GeomEdge edge in edgesDraggedWithSource)
+                ModifyEdgeByScale(delta, edge);
+            foreach (GeomEdge edge in edgesDraggedWithTarget)
+                ModifyEdgeByScale(delta, edge);
+            var ep = new EdgeLabelPlacement(graph.Nodes, edgesDraggedWithSource.Union(edgesDraggedWithTarget));
+            ep.Run();
         }
 
         void PropagateChangesToClusterParents() {
@@ -285,6 +304,54 @@ namespace Microsoft.Msagl.Drawing {
 
         static void DragEdgeAsStraightLine(Point delta, GeomEdge edge) {
             StraightLineEdges.CreateSimpleEdgeCurveWithUnderlyingPolyline(edge);
+        }
+        void ModifyEdgeByScale(Point delta,GeomEdge edge) {
+            //StraightLineEdges.CreateSimpleEdgeCurveWithUnderlyingPolyline(edge);
+            var sn = edge.Source.UserData as Drawing.Node;
+            var tn = edge.Target.UserData as Drawing.Node;
+            //var gg = graph.UserData as Graph;
+            //var vsn = Viewer.GetIViewerObject(sn);
+            //var vtn = Viewer.GetIViewerObject(tn);
+            Drawing.Node oN=null, tN=null;
+            if (Viewer.GetIViewerObject(sn).MarkedForDragging) {
+                tN = sn;
+                oN = tn;
+            }
+            else {
+                tN = tn;
+                oN = sn;
+            }
+            Point o = oN.Pos, t = tN.Pos, t_ = t - delta;
+            double scale = (t - o).Length/ (t_ - o).Length;
+            //double angle = Point.Angle(t, o, t_)*180/Math.PI;
+            double angle = Point.Angle(t, o, t_);
+            System.Windows.Media.Matrix mm = System.Windows.Media.Matrix.Identity;
+            //mm.ScaleAt(scale, scale, o.X, o.Y);
+            mm.RotateAt(angle, o.X, o.Y);
+            //PlaneTransformation mt = new PlaneTransformation(mm.M11,mm.M12,mm.OffsetX,mm.M21,mm.M22,mm.OffsetY);
+            var scaleMatrix = new PlaneTransformation(scale, 0, 0, 0, scale, 0);
+            var translateToOrigin = new PlaneTransformation(1, 0, -o.X, 0, 1, -o.Y);
+            var translateToNode = new PlaneTransformation(1, 0, o.X, 0, 1, o.Y);
+            var rotateMatrix = PlaneTransformation.Rotation(-angle);
+            var matrix = translateToNode * scaleMatrix * rotateMatrix * translateToOrigin;
+            
+            if (edge.UnderlyingPolyline != null) {
+                var ul = edge.UnderlyingPolyline;
+                if (tN == sn)
+                    ul.HeadSite.Point = t;
+                else
+                    ul.LastSite.Point = t;
+                for(Site s=ul.HeadSite.Next; s != ul.LastSite ;s = s.Next) {
+                    s.Point = matrix * s.Point;
+                }
+                edge.Curve = ul.CreateCurve();
+                Arrowheads.TrimSplineAndCalculateArrowheads(edge, edge.Curve, true, false);
+            }
+
+            //edge.Curve = edge.Curve.Transform(matrix);
+            
+            //var angle= Point.Angle(graph.)
+
         }
 
         void UpdateGraphBoundingBoxWithCheck() {
