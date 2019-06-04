@@ -106,7 +106,7 @@ namespace Microsoft.Msagl.Drawing{
             RaiseVisualsChangedEvent();
         }
 
-        void RaiseVisualsChangedEvent(){
+        protected void RaiseVisualsChangedEvent(){
             if (VisualsChanged != null)
                 VisualsChanged(this, null);
         }

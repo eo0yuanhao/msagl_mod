@@ -29,14 +29,14 @@ namespace Microsoft.Msagl.Drawing {
     /// Node of the Microsoft.Msagl.Drawing.
     /// </summary>
     [Serializable]
-    public class Node : DrawingObject, ILabeledObject {
+    public class Node : DrawingObject2, ILabeledObject {
         
         
         Label label;
         /// <summary>
         /// the label of the object
         /// </summary>
-        public Label Label {
+        public override Label Label {
             get { return label; }
             set { label = value; }
         }
@@ -311,5 +311,10 @@ namespace Microsoft.Msagl.Drawing {
                         e.IsVisible = false;
             }
         }
+        #region MyAdded
+        public override AttributeBase AttrBase {
+            get => attr;
+        }
+        #endregion
     }
 }

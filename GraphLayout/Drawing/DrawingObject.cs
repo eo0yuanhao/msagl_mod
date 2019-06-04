@@ -47,5 +47,16 @@ namespace Microsoft.Msagl.Drawing {
                     IsVisibleChanged(this);
             }
         }
+
+    }
+    /// <summary>
+    /// extended DrwingObject
+    /// </summary>
+    public abstract class DrawingObject2 : DrawingObject {
+        /// <summary>
+        ///  node and edge common attribute
+        /// </summary>
+        public abstract AttributeBase AttrBase { get; }
+        public abstract Label Label { get; set; }
     }
 }

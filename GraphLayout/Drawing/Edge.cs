@@ -21,7 +21,7 @@ namespace Microsoft.Msagl.Drawing {
     /// Edge of Microsoft.Msagl.Drawing
     /// </summary>
     [Serializable]
-    public class Edge : DrawingObject, ILabeledObject {
+    public class Edge : DrawingObject2, ILabeledObject {
 
         Core.Layout.Edge geometryEdge;
         /// <summary>
@@ -80,7 +80,7 @@ namespace Microsoft.Msagl.Drawing {
         /// <summary>
         /// the label of the object
         /// </summary>
-        public Label Label {
+        public override Label Label {
             get { return label; }
             set { label = value; }
         }
@@ -313,6 +313,11 @@ namespace Microsoft.Msagl.Drawing {
             }
         }
 
-   
+        #region MyAdded
+        public override AttributeBase AttrBase {
+            get => attr;
+        }
+        #endregion
+
     }
 }
