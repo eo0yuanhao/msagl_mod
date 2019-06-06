@@ -40,16 +40,18 @@ namespace IRxMap {
     using GVH = GraphViewerHelper;
     using ToggleButton = System.Windows.Controls.Primitives.ToggleButton;
     using System.Diagnostics;
+    using controls;
+    using Xceed.Wpf.AvalonDock.Layout;
 
     public partial class MainWindow : Window {
 
         Panel panel;//= new DockPanel();
         GraphViewer _graphViewer;
         bool _iset_ShapeStyle = false;
-        bool _iset_edgeLineStyle = false;
-        bool _iset_edgeSrcArrow = false;
-        bool _iset_edgeDstArrow = false;
-        bool _iset_edgeDecrate = false;
+        //bool _iset_edgeLineStyle = false;
+        //bool _iset_edgeSrcArrow = false;
+        //bool _iset_edgeDstArrow = false;
+        //bool _iset_edgeDecrate = false;
 
         public int _nodeIdCounter = 0;
         string _currentCmd = "select";
@@ -60,6 +62,7 @@ namespace IRxMap {
         readonly ToggleButton[] toolBtns;
         ICommand[] commandList;
         EdgeAttr edge_defApplyAttr = new EdgeAttr();
+        LayoutAnchorable edge_defApplyAttrPanel;
         private class Enum_List<TEnum> {
             public class Enum_Record {
                 public string Enum_str { get; set; }
@@ -96,6 +99,12 @@ namespace IRxMap {
             
             //window_loaded(null, null);
         }
+        public static GraphViewer global_graphViewer;
+        public static ICollection<IViewerObject> SelectedViewerObjects() {
+            if (global_graphViewer == null)
+                return null;
+            return global_graphViewer.LayoutEditor.dragGroup;
+        }
 
         private void InitControls() {
             //panel.LastChildFill = true;
@@ -110,7 +119,9 @@ namespace IRxMap {
 
             nodeAttrGroup.Visibility = Visibility.Hidden;
             //propertyPanel.UpdateLayout();
-            edgeAttrGroup.Visibility = Visibility.Hidden;
+            //edgeAttrGroup.Visibility = Visibility.Hidden;
+            edgeEditor.Visibility = Visibility.Visible;
+            global_graphViewer = _graphViewer;
         }
 
         private void loadDataToControls() {
@@ -126,36 +137,36 @@ namespace IRxMap {
             #endregion
 
             #region srcArrowStyle_cmb initial data
-            srcArrowStyle_cmb.ItemsSource = new Enum_List<ArrowStyle>().List;
-            _iset_edgeSrcArrow  = true;
-            srcArrowStyle_cmb.SelectedIndex = 0;
-            _iset_edgeSrcArrow = false;
-            #endregion
+            //srcArrowStyle_cmb.ItemsSource = new Enum_List<ArrowStyle>().List;
+            //_iset_edgeSrcArrow  = true;
+            //srcArrowStyle_cmb.SelectedIndex = 0;
+            //_iset_edgeSrcArrow = false;
+            //#endregion
 
-            #region lineStyle_cmb initial data
-            {
-                var el = new Enum_List<DStyle>();
-                var conCol = new[] { DStyle.Dashed, DStyle.Dotted, DStyle.Solid };
-                el.List = el.List.Where(x => conCol.Contains(x.Enum_value) ).ToList();
-                lineStyle_cmb.ItemsSource = el.List;
-                _iset_edgeLineStyle = true;
-                lineStyle_cmb.SelectedIndex = 0;
-                _iset_edgeLineStyle = false;
-            }
-            #endregion
+            //#region lineStyle_cmb initial data
+            //{
+            //    var el = new Enum_List<DStyle>();
+            //    var conCol = new[] { DStyle.Dashed, DStyle.Dotted, DStyle.Solid };
+            //    el.List = el.List.Where(x => conCol.Contains(x.Enum_value) ).ToList();
+            //    lineStyle_cmb.ItemsSource = el.List;
+            //    _iset_edgeLineStyle = true;
+            //    lineStyle_cmb.SelectedIndex = 0;
+            //    _iset_edgeLineStyle = false;
+            //}
+            //#endregion
 
-            #region dstArrowStyle_cmb initial data
-            dstArrowStyle_cmb.ItemsSource = new Enum_List<ArrowStyle>().List;
-            _iset_edgeDstArrow = true;
-            dstArrowStyle_cmb.SelectedIndex = 0;
-            _iset_edgeDstArrow = false;
-            #endregion
+            //#region dstArrowStyle_cmb initial data
+            //dstArrowStyle_cmb.ItemsSource = new Enum_List<ArrowStyle>().List;
+            //_iset_edgeDstArrow = true;
+            //dstArrowStyle_cmb.SelectedIndex = 0;
+            //_iset_edgeDstArrow = false;
+            //#endregion
 
-            #region decSymbol_cmb initial data
-            decSymbol_cmb.ItemsSource = new List<string>() { "","center_of" };
-            _iset_edgeDecrate  = true;
-            decSymbol_cmb.SelectedIndex = 0;
-            _iset_edgeDecrate = false;
+            //#region decSymbol_cmb initial data
+            //decSymbol_cmb.ItemsSource = new List<string>() { "","center_of" };
+            //_iset_edgeDecrate  = true;
+            //decSymbol_cmb.SelectedIndex = 0;
+            //_iset_edgeDecrate = false;
             #endregion
 
 
@@ -279,7 +290,8 @@ namespace IRxMap {
             id_box.Text = "";
             label_box.Text = "";
             nodeAttrGroup.Visibility = Visibility.Hidden;
-            edgeAttrGroup.Visibility = Visibility.Hidden;
+            //edgeAttrGroup.Visibility = Visibility.Hidden;
+            edgeEditor.Visibility = Visibility.Hidden;
         }
 
         private void getValueFromViewerObject(IViewerObject newObject) {
@@ -306,49 +318,40 @@ namespace IRxMap {
                 id_box.Text = att.Id;
                 label_box.Text = edge.LabelText;
 
+                edgeEditor.SetAttr(att);
+                edgeEditor.Visibility = Visibility.Visible;
+                ////_iset_edgeDecrate = true;
+
+                //_iset_edgeLineStyle = true;
+                //lineStyle_cmb.SelectedValue = att.FirstStyle;
+                //_iset_edgeLineStyle = false;
 
                 //_iset_edgeDecrate = true;
-
-                _iset_edgeLineStyle = true;
-                lineStyle_cmb.SelectedValue = att.FirstStyle;
-                _iset_edgeLineStyle = false;
-
-                _iset_edgeDecrate = true;
-                decSymbol_cmb.SelectedValue = edge.UserData==null? "": edge.UserData ;
-                _iset_edgeDecrate = false;
+                //decSymbol_cmb.SelectedValue = edge.UserData==null? "": edge.UserData ;
+                //_iset_edgeDecrate = false;
                 
-                _iset_edgeSrcArrow = true;
-                srcArrowStyle_cmb.SelectedValue = att.ArrowheadAtSource;
-                _iset_edgeSrcArrow = false;
+                //_iset_edgeSrcArrow = true;
+                //srcArrowStyle_cmb.SelectedValue = att.ArrowheadAtSource;
+                //_iset_edgeSrcArrow = false;
 
-                _iset_edgeDstArrow = true;
-                dstArrowStyle_cmb.SelectedValue = att.ArrowheadAtTarget;
-                _iset_edgeDstArrow = false;
+                //_iset_edgeDstArrow = true;
+                //dstArrowStyle_cmb.SelectedValue = att.ArrowheadAtTarget;
+                //_iset_edgeDstArrow = false;
                 
-                edgeAttrGroup.Visibility = Visibility.Visible;
+                //edgeAttrGroup.Visibility = Visibility.Visible;
             }
 
         }
         public void window_loaded(object sender, RoutedEventArgs e) {
-            //var tt = new Window();
-            //tt.Content = new EdgeAttrEditor();
-            //tt.Show();
-
             Graph graph = null ;
             if (LoadConfigData()) {
                 if (System.IO.File.Exists(_fileName)) {
-                    graph = Graph.Read(_fileName);
+                    loadFile(_fileName);
+                    graph = _graphViewer.Graph;
                 }
             }
             var gv = _graphViewer;
-            if (graph != null) {
-                
-                gv.NeedToCalculateLayout = false;
-                gv.Graph = graph;
-                gv.Graph.GeometryGraph.UpdateBoundingBox();
-                gv.SetInitialTransform();
-                gv.Transform = gv.Transform;
-            }else {
+            if (graph == null) {
                 _graphViewer.Graph = new Graph();
                 //gv.SetInitialTransform();
                 gv.Transform = gv.Transform;
@@ -689,8 +692,18 @@ namespace IRxMap {
             pressingBtn(selectBtn);
             _currentCmd = "select";
         }
+        private void ApplyBtn_CheckChanged(object sender, RoutedEventArgs e) {
+            pressingBtn(applyBtn);
+            if (applyBtn.IsChecked.Value) {
+                _currentCmd = "apply attr";
+            }
+            else {
+                _currentCmd = "select";
+            }
+            
+        }
 
-        void graphViewer_MouseDown(object sender, MsaglMouseEventArgs e) {
+        void graphViewer_MouseDown(object sender, MsaglMouseEventArgs evt) {
             if(_currentCmd == "add node") {
                 var gv = _graphViewer;
                 string id = null;
@@ -700,11 +713,38 @@ namespace IRxMap {
                 var n = gv.Graph.AddNode(id);
                 n.Attr = _defaultNodeAttr.Clone();
                 n.Attr.Id = id;
-                GVH.addVnodeByDnode(gv, n, gv.ScreenToSource(e));
+                GVH.addVnodeByDnode(gv, n, gv.ScreenToSource(evt));
                 
                 _mouseEventHandled = true;
-            }else if(_currentCmd == "node editing") {
+            }
+            else if(_currentCmd == "node editing") {
                 exitNodeEditor();
+                _currentCmd = "select";
+            }
+            else if(_currentCmd == "apply attr") {
+                var obj = _graphViewer.ObjectUnderMouseCursor;
+                if (obj == null)
+                    return;
+                var vedge = obj as VEdge;
+                if(vedge != null) {
+                    var att = vedge.Edge.Attr;
+                    if(edge_defApplyAttrPanel != null) {
+                        EdgeAttrApplyEditor e = edge_defApplyAttrPanel.Content as EdgeAttrApplyEditor;
+                        if (e.TarArrowStyleCmb.IsEnabled) {
+                            att.ArrowheadAtTarget = (ArrowStyle)e.TarArrowStyleCmb.SelectedValue;
+                        }
+                        if (e.SrcArrowStyleCmb.IsEnabled) {
+                            att.ArrowheadAtSource = (ArrowStyle)e.SrcArrowStyleCmb.SelectedValue;
+                        }
+                        if (e.LineStyleCmb.IsEnabled) {
+                            att.FirstStyle = (DStyle)e.LineStyleCmb.SelectedValue;
+                        }
+                        if (e.DecorateSymbolCmb.IsEnabled) {
+                            att.DefinedDrawDelegateName = (string)e.DecorateSymbolCmb.SelectedValue;
+                        }
+                    }
+                }
+                
             }
         }
 
@@ -720,6 +760,9 @@ namespace IRxMap {
         FrameworkElement _nodeTextEditor;
         VNode _editingNode;
         private void graphViewer_MouseDoubleClick(object sender, MsaglMouseEventArgs e) {
+            if (_currentCmd != "select")
+                return;
+
             var vnode = _graphViewer.ObjectUnderMouseCursor as VNode;
             //var vnode = clickCounter.ClickedObject as IViewerNode;
             if (vnode == null)
@@ -749,6 +792,9 @@ namespace IRxMap {
             textBox.KeyDown += editingNode_editor_keyDown;
             Common.SetFrameworkElementCenter(textBox, pos);
             _graphViewer.GraphCanvas.Children.Add(textBox);
+            textBox.Focus();
+            //textBox.CaretIndex = textBox.Text.Length;
+            textBox.SelectAll();
             _editingNode = vnode;
             _currentCmd = "node editing";
         }
@@ -781,21 +827,30 @@ namespace IRxMap {
         }
 
         private void LoadBtn_Click(object sender, RoutedEventArgs e) {
-            var openFileDialog = new Microsoft.Win32.OpenFileDialog { RestoreDirectory = true, Filter = "MSAGL Files(*.msagl)|*.msagl" };
-            try {
-                if (openFileDialog.ShowDialog().GetValueOrDefault()) {
-                    _fileName = openFileDialog.FileName;
-                    var gv = _graphViewer;
-                    gv.NeedToCalculateLayout = false;
-                    gv.Graph = Graph.Read(_fileName);
-                    //if (GraphLoadingEnded != null)
-                    //    GraphLoadingEnded(this, null);
-                    gv.Graph.GeometryGraph.UpdateBoundingBox();
-                    gv.SetInitialTransform();
-                    gv.Transform = gv.Transform;
-                }
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog {
+                        RestoreDirectory = true,
+                        Filter = "MSAGL Files(*.msagl)|*.msagl" };
+   
+            if (openFileDialog.ShowDialog().GetValueOrDefault()) {
+                loadFile(openFileDialog.FileName);
             }
-            catch (Exception ex) {
+    
+    
+        }
+        public void loadFile(string filename) {
+            try {
+                _fileName = filename;
+                var gv = _graphViewer;
+                gv.NeedToCalculateLayout = false;
+                gv.Graph = Graph.Read(_fileName);
+                //if (GraphLoadingEnded != null)
+                //    GraphLoadingEnded(this, null);
+                gv.Graph.GeometryGraph.UpdateBoundingBox();
+                gv.SetInitialTransform();
+                gv.Transform = gv.Transform;
+                this.Title = System.IO.Path.GetFileNameWithoutExtension(_fileName);
+            }
+                catch (Exception ex) {
                 MessageBox.Show(ex.Message);
             }
         }
@@ -818,59 +873,66 @@ namespace IRxMap {
             }
         }
 
-        private void DecSymbol_cmb_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-            if (_iset_edgeDecrate) {
-                return;
-            }
+        private void EdgeEditor_SrcArrowChanged(object sender, EdgeAttrEditor .ValueChangedEventArgs<ArrowStyle> e) {
             var vedge = _editingObj as VEdge;
-            var selValue = decSymbol_cmb.SelectedValue.ToString();
-            if (selValue == "") {
+            var att = vedge.Edge.Attr;
+            att.ArrowheadAtSource = edgeEditor.SrcArrowStyle;
+
+        }
+
+        private void EdgeEditor_TarArrowChanged(object sender, EdgeAttrEditor.ValueChangedEventArgs<ArrowStyle> e) {
+            var vedge = _editingObj as VEdge;
+            var att = vedge.Edge.Attr;
+            // set arrow will auto fire VisualChanged,not need more vedge.Invalidate()
+            att.ArrowheadAtTarget = edgeEditor.TarArrowStyle;
+
+        }
+
+        private void EdgeEditor_LineStyleChanged(object sender, EdgeAttrEditor.ValueChangedEventArgs<DStyle> e) {
+            var vedge = _editingObj as VEdge;
+            var at = vedge.Edge.Attr;
+            at.FirstStyle = edgeEditor.LineStyle;
+        }
+
+        private void EdgeEditor_DecoratorChanged(object sender, EdgeAttrEditor.ValueChangedEventArgs<string> e) {
+            string s = edgeEditor.DecorateSymbol;
+            var vedge = _editingObj as VEdge;
+            if(s == "") {
                 vedge.Edge.UserData = null;
                 vedge.Edge.DrawEdgeDelegate = null;
             }
             else {
-                vedge.Edge.UserData = selValue;
-                vedge.Edge.DrawEdgeDelegate = vedge.GetDrawDelegate_FromUserData(selValue);
+                vedge.Edge.UserData = s;
+                vedge.Edge.DrawEdgeDelegate = vedge.GetDrawDelegate_FromUserData(s);
             }
             vedge.Invalidate();
         }
 
-        private void LineStyle_cmb_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-            if (_iset_edgeLineStyle) {                
-                return;
-            }
-            var vedge = _editingObj as VEdge;
-            //change Styles will auto refresh vedge;
-            //vedge.Edge.Attr.ClearStyles();
-            var at = vedge.Edge.Attr;
-            at.FirstStyle = (DStyle) lineStyle_cmb.SelectedValue;
-            //vedge.Invalidate();
+        private void MenuItem_attr_Click(object sender, RoutedEventArgs e) {
+            AttrPane.IsVisible = true;
         }
 
-        private void SrcArrowStyle_cmb_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-            if (_iset_edgeSrcArrow) {                
-                return;
+        private void MenuItem_defAttr_Click(object sender, RoutedEventArgs evt) {
+            if(edge_defApplyAttrPanel == null) {
+                var p = edge_defApplyAttrPanel = new LayoutAnchorable();
+                EdgeAttrApplyEditor e  = new EdgeAttrApplyEditor();
+                p.Content = e;
+                p.Title = "默认属性";
+                //p.Parent = leftAnchorPane;
+                leftAnchorPane.Children.Add(p);
+                p.CanDockAsTabbedDocument = false;
+                
             }
-            var vedge = _editingObj as VEdge;
-            var att = vedge.Edge.Attr;
-            att.ArrowheadAtSource = (ArrowStyle)srcArrowStyle_cmb.SelectedValue;
-            //var ge = vedge.Edge.GeometryEdge;
-            //Microsoft.Msagl.Core.Layout.Arrowheads.TrimSplineAndCalculateArrowheads(
-            //   ge, ge.Curve, false, true);
-            //DebugV.D.tag = 1;
-            //vedge.Invalidate();
+            if (!edge_defApplyAttrPanel.IsVisible) {
+                edge_defApplyAttrPanel.IsVisible = true;
+            }
+                
         }
 
-        private void DstArrowStyle_cmb_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-            if (_iset_edgeDstArrow) {
-                return;
-            }
-            var vedge = _editingObj as VEdge;
-            var att = vedge.Edge.Attr;
-            // set arrow will auto fire VisualChanged,not need more vedge.Invalidate()
-            att.ArrowheadAtTarget = (ArrowStyle)dstArrowStyle_cmb.SelectedValue;
-            //vedge.Invalidate();
+        private void MenuItem_doc_Click(object sender, RoutedEventArgs e) {
+
         }
+
 
     }
 }

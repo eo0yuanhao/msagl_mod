@@ -275,6 +275,7 @@ namespace Microsoft.Msagl.Drawing {
             edgeAttr.ArrowheadAtSource = (ArrowStyle)Enum.Parse(typeof(ArrowStyle), ReadStringElement(Tokens.ArrowStyle), false);
             edgeAttr.ArrowheadAtTarget = (ArrowStyle)Enum.Parse(typeof(ArrowStyle), ReadStringElement(Tokens.ArrowStyle), false);
             edgeAttr.ArrowheadLength =(float) ReadDoubleElement(Tokens.ArrowheadLength);
+            edgeAttr.DefinedDrawDelegateName = ReadStringElement(Tokens.DefinedDrawDelegateName);
             ReadEndElement();
         }
 

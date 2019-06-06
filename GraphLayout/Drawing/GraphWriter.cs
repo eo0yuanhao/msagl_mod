@@ -256,6 +256,8 @@ namespace Microsoft.Msagl.Drawing {
             WriteStringElement(Tokens.ArrowStyle, edgeAttr.ArrowheadAtSource);
             WriteStringElement(Tokens.ArrowStyle, edgeAttr.ArrowheadAtTarget);
             WriteStringElement(Tokens.ArrowheadLength, edgeAttr.ArrowheadLength);
+            var d = edgeAttr.DefinedDrawDelegateName;
+            WriteStringElement(Tokens.DefinedDrawDelegateName, d==null?"":d);
             WriteEndElement();
         }
 

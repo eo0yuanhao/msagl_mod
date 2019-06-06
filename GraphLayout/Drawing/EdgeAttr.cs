@@ -172,5 +172,6 @@ namespace Microsoft.Msagl.Drawing {
                 
             }
         }
+        public string DefinedDrawDelegateName { get; set; }
     }
 }

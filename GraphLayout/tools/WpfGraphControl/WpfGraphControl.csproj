@@ -97,7 +97,6 @@
     <Compile Include="ExtendEdgeDraw.cs" />
     <Compile Include="GraphViewer.cs" />
     <Compile Include="GvMouseEventArgs.cs" />
-    <Compile Include="IEditableObject_ext.cs" />
     <Compile Include="IInvalidatable.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">

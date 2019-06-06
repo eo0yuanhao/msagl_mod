@@ -3,27 +3,42 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:LC="clr-namespace:IRxMap.controls"
         xmlns:local="clr-namespace:IRxMap"
+        xmlns:av="http://schemas.xceed.com/wpf/xaml/avalondock"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid KeyDown="Grid_KeyDown" KeyUp="Grid_KeyUp">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="142*"/>
-            <ColumnDefinition Width="651*"/>
-        </Grid.ColumnDefinitions>
+
         <Grid.RowDefinitions>
             <RowDefinition Height="40"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
-        <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" >
+        <StackPanel Grid.Row="0" Orientation="Horizontal" >
             <ToggleButton Content="Node" x:Name="nodeBtn" Width="40" Checked="NodeBtn_CheckChanged" Unchecked="NodeBtn_CheckChanged"/>
             <ToggleButton Content="Edge" x:Name="edgeBtn"  Width="40" Checked="EdgeBtn_CheckChanged"  Unchecked="EdgeBtn_CheckChanged"/>
             <ToggleButton Content="Select" x:Name="selectBtn"  Width="40" Checked="SelectBtn_CheckChanged"  Unchecked="SelectBtn_CheckChanged"/>
+            <ToggleButton Content="Apply" x:Name="applyBtn" Width="40" Checked="ApplyBtn_CheckChanged" Unchecked="ApplyBtn_CheckChanged" />
+            <TextBlock  Width="30"/>
             <Button Content="Save" x:Name="saveBtn"  Width="40" Click="SaveBtn_Click"/>
             <Button Content="Load" x:Name="loadBtn"  Width="40" Click="LoadBtn_Click"/>              
-            <Button Content="SaveAs" x:Name="saveasBtn"  Width="40" Click="SaveasBtn_Click"/> 
+            <Button Content="SaveAs" x:Name="saveasBtn"  Width="40" Click="SaveasBtn_Click"/>
+            <Menu>
+                <MenuItem Height="40" Header="视"  >
+                    <MenuItem Header="属性" Click="MenuItem_attr_Click"></MenuItem>
+                    <MenuItem Header="默认属性" Click="MenuItem_defAttr_Click"/>
+                    <MenuItem Header="文档" Click="MenuItem_doc_Click"/>
+                </MenuItem>
+            </Menu>
+          
         </StackPanel>
-        <Grid x:Name="docPanel" Grid.Row="1" Grid.Column="2" ClipToBounds="True" />
+
+        <av:DockingManager Grid.Row="1">
+            <av:LayoutRoot x:Name="layRoot">
+                <av:LayoutPanel x:Name="mainDockingPanel">
+                    <av:LayoutAnchorablePane x:Name="leftAnchorPane" DockWidth="150">
+                        <av:LayoutAnchorable  x:Name="AttrPane"  Title="属性" CanClose="False" >
+             
         <StackPanel x:Name="propertyPanel" Background="#FFD0D0D0"  Grid.Column="0" Grid.Row="1">
             <Label Content="id:" Margin="0,0,77.2,0"/>
             <TextBox x:Name="id_box" Height="23" TextWrapping="Wrap" LostFocus="Id_box_LostFocus" KeyDown="textBox_KeyDown"/>
@@ -40,24 +55,25 @@
 
                     </StackPanel>
                 </GroupBox>
-                <GroupBox x:Name="edgeAttrGroup" Header="Attr" >
-                    <StackPanel >
-                        <Label Margin="0,0,0.2,0">
-                            edge type:
-                        </Label>
-                        <Label Content="Source Arrow:" />
-                        <ComboBox x:Name="srcArrowStyle_cmb" SelectionChanged="SrcArrowStyle_cmb_SelectionChanged" DisplayMemberPath="Enum_str" SelectedValuePath="Enum_value" ></ComboBox>
-                        <Label Content="Line style:" />
-                        <ComboBox x:Name="lineStyle_cmb" SelectionChanged="LineStyle_cmb_SelectionChanged" DisplayMemberPath="Enum_str" SelectedValuePath="Enum_value" ></ComboBox>
-                        <Label Content="Destination Arrow:" />
-                        <ComboBox x:Name="dstArrowStyle_cmb" SelectionChanged="DstArrowStyle_cmb_SelectionChanged" DisplayMemberPath="Enum_str" SelectedValuePath="Enum_value" ></ComboBox>
-                        <Label Content="decorate symbol:"/>
-                        <ComboBox x:Name="decSymbol_cmb" SelectionChanged="DecSymbol_cmb_SelectionChanged" />
-                    </StackPanel>
-                </GroupBox> 
+                <LC:EdgeAttrEditor x:Name="edgeEditor" SrcArrowChanged="EdgeEditor_SrcArrowChanged" 
+                                      TarArrowChanged="EdgeEditor_TarArrowChanged" 
+                                      LineStyleChanged="EdgeEditor_LineStyleChanged" 
+                                      DecoratorChanged="EdgeEditor_DecoratorChanged">
+                    
+                </LC:EdgeAttrEditor>
+
             </Grid>
      
         </StackPanel>
-
+                        </av:LayoutAnchorable>
+                    </av:LayoutAnchorablePane>
+                    <av:LayoutDocumentPane ShowHeader="False">
+                        <av:LayoutAnchorable>
+                            <Grid x:Name="docPanel"  ClipToBounds="True" />
+                        </av:LayoutAnchorable>
+                    </av:LayoutDocumentPane>
+                </av:LayoutPanel>
+            </av:LayoutRoot>
+        </av:DockingManager>
     </Grid>
 </Window>
