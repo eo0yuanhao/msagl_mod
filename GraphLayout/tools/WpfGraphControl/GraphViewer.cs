@@ -189,10 +189,14 @@ namespace Microsoft.Msagl.WpfGraphControl {
             n.GeometryNode.Center = pos;
             var blk = vnode.FrameworkElementOfNodeForLabel as TextBlock;
             blk.Text = newLabelText;
-            //blk.Width =  Common.MeasureLabel(n.Label).Width;
-            //blk.Width = Double.NaN;
-            //blk.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            blk.Width = n.GeometryNode.Width ;
+            //blk.Width = Common.MeasureLabel(n.Label).Width;
+            blk.Width = Double.NaN;
+            blk.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            //blk.Width = blk.DesiredSize.Width;
+            blk.Width = blk.DesiredSize.Width;
+            blk.Height = blk.DesiredSize.Height;
+                
+            //blk.Width = n.GeometryNode.Width ;
             foreach (var dEdge in n.Edges) {
                 StraightLineEdges.CreateSimpleEdgeCurveWithUnderlyingPolyline(dEdge.GeometryEdge);
                 (drawingObjectsToIViewerObjects[dEdge] as VEdge).Invalidate();
