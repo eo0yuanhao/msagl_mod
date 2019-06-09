@@ -834,6 +834,7 @@ namespace Microsoft.Msagl.Drawing {
                         if (!ActiveDraggedObject.MarkedForDragging)
                             UnselectEverything();
                         SelectObjectForDragging(ActiveDraggedObject);
+                        raiseObjectEditingStatusChanged(ActiveDraggedObject);
                         geomGraphEditor.PrepareForObjectDragging(DraggedGeomObjects(), GetDraggingMode());
                     }
                 }
@@ -901,7 +902,7 @@ namespace Microsoft.Msagl.Drawing {
                     args.Handled = true;
                 } else { 
                     UnselectEverything();
-                    raiseObjectEditingStatusChanged(null);
+                    //raiseObjectEditingStatusChanged(null);
                 }
             }
             else if (Dragging) {
@@ -1020,7 +1021,8 @@ namespace Microsoft.Msagl.Drawing {
             foreach (IViewerNode node in ViewerNodes())
                 if (rect.Intersects(node.Node.BoundingBox))
                     SelectObjectForDragging(node);
-
+            if(dragGroup.Count>0)
+                raiseObjectEditingStatusChanged(dragGroup.First());
             args.Handled = true;
         }
 

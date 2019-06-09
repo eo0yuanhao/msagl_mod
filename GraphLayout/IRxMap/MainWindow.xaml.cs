@@ -32,7 +32,7 @@ namespace IRxMap {
     using Microsoft.Msagl.Core.Geometry.Curves;
     using Microsoft.Msagl.Routing;
     using Microsoft.Msagl.Core;
-    using DLabel = Microsoft.Msagl.Drawing.Label;
+    using DrawingLabel = Microsoft.Msagl.Drawing.Label;
     using LLabel = Microsoft.Msagl.Core.Layout.Label;
     using DStyle = Microsoft.Msagl.Drawing.Style;
    
@@ -293,8 +293,43 @@ namespace IRxMap {
             //edgeAttrGroup.Visibility = Visibility.Hidden;
             edgeEditor.Visibility = Visibility.Hidden;
         }
-
         private void getValueFromViewerObject(IViewerObject newObject) {
+            var objs = _graphViewer.LayoutEditor.dragGroup;
+            var obj = objs.First();
+            var vnode = obj as VNode;
+            if (vnode != null) {
+                if (objs.Count() == 1) {
+                    var att = vnode.Node.Attr;
+                    id_box.Text = att.Id;
+                    label_box.Text = vnode.Node.LabelText;
+                    _iset_ShapeStyle = true;
+                    //SelectionChanged will not fire when hidden
+                    shapeStyle_cmb.SelectedValue = att.Shape;
+                    _iset_ShapeStyle = false;
+                    nodeAttrGroup.Visibility = Visibility.Visible;
+                }
+                else {
+                    _iset_ShapeStyle = true;
+                    shapeStyle_cmb.SelectedIndex = 0;
+                    _iset_ShapeStyle = false;
+
+                    nodeAttrGroup.Visibility = Visibility.Visible;
+
+                }
+            }
+            else {
+                var vedge = obj as VEdge;
+                if (vedge == null)
+                    return;
+
+                var att = vedge.Edge.Attr;
+                id_box.Text = att.Id;
+                label_box.Text = vedge.Edge.LabelText;
+                edgeEditor.SetAttr(att);
+                edgeEditor.Visibility = Visibility.Visible;
+            }
+        }
+        private void getValueFromViewerObject_prev(IViewerObject newObject) {
             var ob = newObject.DrawingObject;
             _editingObj = newObject;
             var node = ob as Node;
@@ -467,7 +502,7 @@ namespace IRxMap {
                 var vedge = editingObj as VEdge;
                 var label = edge.Label;
                 if (label == null) {
-                    label=new DLabel(label_box.Text);
+                    label=new DrawingLabel(label_box.Text);
                     edge.Label = label;
                     label.Owner = edge;
                     //var sz = Common.MeasureLabel(label);
@@ -523,8 +558,33 @@ namespace IRxMap {
 
 
         }
-
         private void ShapeStyle_cmb_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+            if (_iset_ShapeStyle) {
+                _iset_ShapeStyle = false;
+                return;
+            }
+            var objs = _graphViewer.LayoutEditor.dragGroup;
+            if ((objs.First() as VNode) == null)
+                return;
+            foreach(var obj in objs) {
+                VNode vnode = obj as VNode;
+                var sh = (Shape)shapeStyle_cmb.SelectedValue;
+                if (vnode.Node.Attr.Shape == sh)
+                    continue;
+                var node = vnode.Node;
+                node.Attr.Shape = sh;
+                var sz = Common.MeasureLabel(node.Label);
+                var pos = node.GeometryNode.Center;
+                node.GeometryNode.BoundaryCurve = NodeBoundaryCurves.GetNodeBoundaryCurve(vnode.Node, sz.Width, sz.Height);
+                node.GeometryNode.Center = pos;
+                foreach (var dEdge in node.Edges) {
+                    StraightLineEdges.CreateSimpleEdgeCurveWithUnderlyingPolyline(dEdge.GeometryEdge);
+                    (_graphViewer.GetIViewerObject(dEdge) as VEdge).Invalidate();
+                }
+                vnode.Invalidate();
+            }
+        }
+        private void ShapeStyle_cmb_SelectionChanged_prev(object sender, SelectionChangedEventArgs e) {
             //if (_graphViewer == null)
             //    return;
             if (_iset_ShapeStyle) {
